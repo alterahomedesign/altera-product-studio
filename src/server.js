@@ -326,10 +326,13 @@ app.post('/api/photoshoot-scene', async(req,res)=>{
     const catLabel = CATS[catKey]?.type || 'furniture piece';
 
     let prompt;
+    const designerThinking = 'STYLING AND COMPOSITION INTELLIGENCE: Act as a world class interior stylist. SCALE AND PROPORTION: You MUST use the provided dimensions to render the product at an accurate scale. Compare it to standard environmental objects like coffee tables, rugs, or ceiling heights to ensure it looks realistic. EXCLUSIVE LIGHTING PROFILE: Use only bright, high-key, vibrant, and airy lighting. Focus on soft morning sun, ethereal daylight, and fresh atmospheres. AVOID DARKNESS: Strictly zero moody, dark, or low-key lighting. No heavy shadows or dimly lit environments. VISUAL FOCUS: The product must be the hero. Use architectural contrast to define its silhouette against a bright, professional background.';
+    const noText = 'CRITICAL: Do NOT add any text, labels, watermarks, dimensions, product names, or overlays to the image. The image must contain ZERO text of any kind.';
+
     if(isStudio){
-      prompt = 'Professional product photography of this '+catLabel+' called "'+title+'". '+scenePrompt+' Dimensions: '+dims+'. Pure white #FFFFFF studio background. Commercial e-commerce photo. No room context. Output a SQUARE 1:1 aspect ratio image.';
+      prompt = 'High fidelity 1:1 render of '+title+'. SCENE: '+scene+'. BACKGROUND: PERFECT PURE WHITE #FFFFFF. Strictly zero environmental props. Pure isolated product on 100 percent white background. High-key lighting. SLIGHT GROUNDING SHADING: Include subtle, realistic shadows where the product touches the floor for a high-end catalog look. SCALE: Product dimensions are '+dims+'. STRICT PRESERVATION: 100 percent identical furniture geometry and materials. '+designerThinking+' '+noText;
     } else {
-      prompt = 'Create a photorealistic interior design photograph showing this '+catLabel+' called "'+title+'" in context. '+scenePrompt+' The '+catLabel+' dimensions are '+dims+'. Realistic interior photography with natural lighting. The furniture must be the hero/focal point of the image. Maintain exact proportions and design of the original product. Output a SQUARE 1:1 aspect ratio image.';
+      prompt = 'High fidelity 1:1 render of '+title+'. SCENE: '+scene+'. '+scenePrompt+' ENVIRONMENT: High-fidelity interior for this aesthetic. VIBE: Always vibrant and airy. Use bright morning light. SCALE: Product dimensions are '+dims+'. Ensure it is sized correctly relative to the room and props. STRICT PRESERVATION: 100 percent identical furniture geometry and materials. Ensure a bright, professional look with perfectly accurate scale. '+designerThinking+' '+noText;
     }
 
     for(let a=0;a<3;a++){
