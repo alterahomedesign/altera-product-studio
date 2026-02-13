@@ -222,9 +222,10 @@ function renderProductForm(p){
         <p style="font-size:11px">+ Add images for this product</p>
       </div>
       ${(p.originalImages||[]).length?'<div class="fw" style="margin-top:8px">'+p.originalImages.map((img,i)=>'<div style="width:60px;height:60px;border-radius:8px;overflow:hidden"><img src="data:image/png;base64,'+img+'" style="width:100%;height:100%;object-fit:cover"></div>').join('')+'</div>':''}
-      ${(p.originalImages||[]).length?'<button class="bp" style="margin-top:10px;width:100%;padding:10px" onclick="runPhotoshoot('+D.activeTab+')">📸 AI Photoshoot (10 scenes)</button>':''}
+      ${(p.originalImages||[]).length?'<button class="bp" style="margin-top:10px;width:100%;padding:10px" onclick="runPhotoshoot('+D.activeTab+')"'+(p.photoProgress?' disabled':'')+'>'+(p.photoProgress?'⏳ Generating '+p.photoProgress.current+'/'+p.photoProgress.total+': '+esc(p.photoProgress.scene):'📸 AI Photoshoot (10 scenes)')+'</button>':''}
+      ${p.photoProgress?'<div style="margin-top:6px;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div style="width:'+Math.round(p.photoProgress.current/p.photoProgress.total*100)+'%;height:100%;background:linear-gradient(90deg,#b8965a,#8f6d3a);transition:width .5s"></div></div>':''}
     </div>
-    ${(p.aiImages||[]).length?'<div class="cd"><label class="lb">AI Photoshoot ('+p.aiImages.length+'/10)</label><div class="igrid">'+p.aiImages.map(img=>'<div class="icard sel"><img src="data:image/png;base64,'+img.b64+'" style="width:100%;height:100%;object-fit:cover"><div class="iov"><span style="font-size:9px;font-weight:600">'+esc(img.scene)+'</span></div></div>').join('')+'</div></div>':''}
+    ${(p.aiImages||[]).length?'<div class="cd"><label class="lb">AI Photoshoot — '+p.aiImages.length+' images</label><div class="igrid">'+p.aiImages.map(img=>'<div class="icard sel" style="aspect-ratio:1"><img src="data:'+((img.b64||'').startsWith('/9')?'image/jpeg':'image/png')+';base64,'+img.b64+'" style="width:100%;height:100%;object-fit:cover"><div class="iov"><span style="font-size:9px;font-weight:600;color:#fff">'+esc(img.scene)+'</span></div></div>').join('')+'</div></div>':''}
   </div></div>`;
 }
 
@@ -253,19 +254,27 @@ async function runPhotoshoot(idx){
   const p=D.products[idx]; if(!p.originalImages?.length){toast('Add images first');return}
   const scenes=await getScenesForCat(p.catKey||'sofa');
   if(!p.aiImages)p.aiImages=[];
-  showL('Starting photoshoot: '+scenes.length+' scenes...',5);
-  for(let i=0;i<scenes.length;i++){
-    const sc=scenes[i];
-    const pct=Math.round(((i+1)/scenes.length)*100);
-    showL('Generating scene '+(i+1)+'/'+scenes.length+': '+sc.t+'...',pct);
-    try{
-      const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:p.originalImages,title:p.title,scene:sc.t,scenePrompt:sc.p||'',isStudio:!!sc.s,dimensions:p.dimensions||'',creative:'',catKey:p.catKey||'sofa'})});
-      if(!r.ok){console.error('Scene failed:',sc.t);continue}
-      const d=await r.json();
-      if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});D.activeTab=idx;renderEditor();toast('✓ '+(i+1)+'/'+scenes.length+': '+sc.t)}
-    }catch(e){console.error('Scene error:',e)}
-  }
-  hideL();toast('Photoshoot complete: '+p.aiImages.length+' images!');renderEditor();
+  p.photoProgress={current:0,total:scenes.length,scene:''};
+  renderEditor();
+  toast('Photoshoot started in background — '+scenes.length+' scenes');
+
+  // Run in background (non-blocking)
+  (async()=>{
+    for(let i=0;i<scenes.length;i++){
+      const sc=scenes[i];
+      p.photoProgress={current:i+1,total:scenes.length,scene:sc.t};
+      if(D.activeTab===idx)renderEditor();
+      try{
+        const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:p.originalImages.slice(0,2),title:p.title||p.supplierName,scene:sc.t,scenePrompt:sc.p||'',isStudio:!!sc.s,dimensions:p.dimensions||'',creative:'',catKey:p.catKey||'sofa'})});
+        if(!r.ok){const t=await r.text();console.error('Scene failed:',sc.t,t.substring(0,100));continue}
+        const d=await r.json();
+        if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});if(D.activeTab===idx)renderEditor()}
+      }catch(e){console.error('Scene error:',sc.t,e)}
+    }
+    p.photoProgress=null;
+    if(D.activeTab===idx)renderEditor();
+    toast('✓ Photoshoot complete: '+p.aiImages.length+' images for '+p.title);
+  })();
 }
 
 // ═══ GENERATE COPY ═══
