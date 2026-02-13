@@ -37,17 +37,39 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
   try{
     if(!req.file)return res.status(400).json({error:'No file'});
     if(!CLAUDE_KEY)return res.status(500).json({error:'CLAUDE_API_KEY not configured'});
-    const fileB64=req.file.buffer.toString('base64');
-    const mt=req.file.mimetype||'application/octet-stream';
     const cKeys=Object.keys(CATS);
-    const parseR=await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
-      [{type:'document',source:{type:'base64',media_type:mt,data:fileB64}},{type:'text',text:'Parse this supplier catalog. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"]}\nRules: categoryKey MUST match list. costUSD=number. Each line item = separate product. Return JSON array [{},{},...]. No markdown.'}]
-    );
-    let products;
-    const cleaned=parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
-    const arrM=cleaned.match(/\[[\s\S]*\]/);
-    products=JSON.parse(arrM?arrM[0]:cleaned);
-    res.json({products,fileName:req.file.originalname});
+    const fname=req.file.originalname||'catalog';
+    const isExcel=/\.(xlsx?|csv)$/i.test(fname);
+
+    if(isExcel){
+      // Parse Excel/CSV locally with xlsx library
+      const XLSX=require('xlsx');
+      const wb=XLSX.read(req.file.buffer,{type:'buffer'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // Convert spreadsheet to text for Claude to categorize
+      const headerRow=rows[0]||[];
+      const textLines=rows.slice(0,50).map(r=>r.join(' | ')).join('\n');
+      const parseR=await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
+        [{type:'text',text:'Parse this spreadsheet data. The headers are: '+headerRow.join(', ')+'\n\nData:\n'+textLines+'\n\nExtract EVERY product (skip the header row).\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"]}\nRules: categoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
+      );
+      let products;
+      const cleaned=parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      const arrM=cleaned.match(/\[[\s\S]*\]/);
+      products=JSON.parse(arrM?arrM[0]:cleaned);
+      return res.json({products,fileName:fname});
+    } else {
+      // PDF — send directly to Claude as document
+      const fileB64=req.file.buffer.toString('base64');
+      const parseR=await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
+        [{type:'document',source:{type:'base64',media_type:'application/pdf',data:fileB64}},{type:'text',text:'Parse this supplier catalog. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"]}\nRules: categoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
+      );
+      let products;
+      const cleaned=parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      const arrM=cleaned.match(/\[[\s\S]*\]/);
+      products=JSON.parse(arrM?arrM[0]:cleaned);
+      return res.json({products,fileName:fname});
+    }
   }catch(e){console.error('Parse:',e);res.status(500).json({error:e.message})}
 });
 
