@@ -25,6 +25,11 @@ const esc=v=>{const s=String(v??'');return/[,"\n\r]/.test(s)?'"'+s.replace(/"/g,
 const emptyRow=()=>Object.fromEntries(CSV_H.map(h=>[h,'']));
 const aj=v=>Array.isArray(v)?v.join('; '):(v||'');
 
+// Track used product names to avoid repeats
+const usedNames = new Set();
+const NAME_POOL = 'Thessaloniki,Ravenna,Lucerne,Ghent,Tallinn,Dubrovnik,Córdoba,Salzburg,Bruges,Stavanger,Maribor,Trieste,Lecce,Otranto,Cadiz,Sintra,Coimbra,Rovinj,Split,Kotor,Plovdiv,Tbilisi,Yerevan,Tartu,Visby,Bergen,Tromsø,Aarhus,Malmö,Turku,Gdańsk,Wrocław,Kraków,Cesky Krumlov,Olomouc,Bratislava,Ljubljana,Piran,Colmar,Annecy,Dijon,Nantes,Bordeaux,Biarritz,Avignon,Arles,Montpellier,Girona,Ronda,Granada,Seville,Bilbao,Porto,Braga,Funchal,Valletta,Catania,Palermo,Siracusa,Matera,Perugia,Siena,Lucca,Verona,Padova,Bolzano,Trento,Como,Bergamo,Parma,Modena,Ferrara,Mantova,Cremona,Vicenza,Treviso,Udine,Baku,Batumi,Samarkand,Isfahan,Fez,Marrakech,Chefchaouen,Essaouira,Zanzibar,Lamu,Stellenbosch,Swakopmund,Luang Prabang,Hội An,Kandy,Galle,Jaipur,Udaipur,Pondicherry,Mysore,Kyoto,Kanazawa,Takayama,Kamakura,Naoshima,Otaru,Queenstown,Wanaka,Hobart,Byron,Cartagena,Oaxaca,Mérida,Valparaíso,Antigua,Bariloche,Cusco,Medellín,Charleston,Savannah,Asheville,Sedona,Taos,Carmel,Mendocino,Traverse';
+function getAvoidList(){ return Array.from(usedNames).slice(-20).join(', '); }
+
 async function callClaude(system,userContent){
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system,messages:[{role:'user',content:userContent}]})});
   if(!r.ok)throw new Error('Claude API '+r.status+': '+(await r.text()).substring(0,300));
@@ -42,33 +47,97 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
     const isExcel=/\.(xlsx?|csv)$/i.test(fname);
 
     if(isExcel){
-      // Parse Excel/CSV locally with xlsx library
       const XLSX=require('xlsx');
       const wb=XLSX.read(req.file.buffer,{type:'buffer'});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      // Convert spreadsheet to text for Claude to categorize
-      const headerRow=rows[0]||[];
-      const textLines=rows.slice(0,50).map(r=>r.join(' | ')).join('\n');
-      const parseR=await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
-        [{type:'text',text:'Parse this spreadsheet data. The headers are: '+headerRow.join(', ')+'\n\nData:\n'+textLines+'\n\nExtract EVERY product (skip the header row).\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"]}\nRules: categoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
+
+      // Extract embedded images from xlsx (it's a zip file)
+      let embeddedImages = []; // array of {index, b64, mime}
+      let imageAnchors = []; // row->image mapping
+      try {
+        const xlsxZip = await JSZip.loadAsync(req.file.buffer);
+        // Get all media files
+        const mediaFiles = [];
+        xlsxZip.forEach((path, entry) => {
+          if (path.startsWith('xl/media/') && !entry.dir) mediaFiles.push({path, entry});
+        });
+        // Sort by name to maintain order
+        mediaFiles.sort((a,b) => a.path.localeCompare(b.path));
+        for (const {path, entry} of mediaFiles) {
+          const buf = await entry.async('base64');
+          const ext = path.split('.').pop().toLowerCase();
+          const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+          embeddedImages.push({b64: buf, mime, filename: path.split('/').pop()});
+        }
+
+        // Try to parse drawing relationships to map images to rows
+        try {
+          const drawingRels = xlsxZip.file(/xl\/drawings\/_rels\/.*\.rels$/);
+          const drawingXml = xlsxZip.file(/xl\/drawings\/drawing\d+\.xml$/);
+          if (drawingXml.length > 0) {
+            const xml = await drawingXml[0].async('string');
+            // Extract row anchors from twoCellAnchor elements
+            const anchorMatches = xml.matchAll(/<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>[\s\S]*?<\/xdr:from>/g);
+            let idx = 0;
+            for (const m of anchorMatches) {
+              const rowNum = parseInt(m[1]);
+              if (idx < embeddedImages.length) {
+                imageAnchors.push({row: rowNum, imageIdx: idx});
+                idx++;
+              }
+            }
+          }
+        } catch(e) { console.log('Drawing parse skipped:', e.message); }
+      } catch(e) { console.log('Image extraction skipped:', e.message); }
+
+      // Build text for Claude
+      const headerRow = rows[1] || rows[0] || []; // row[1] has actual headers usually
+      const textLines = rows.slice(0, 50).map(r => r.join(' | ')).join('\n');
+
+      const parseR = await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
+        [{type:'text',text:'Parse this spreadsheet data. Headers: '+headerRow.join(', ')+'\n\nData:\n'+textLines+'\n\nExtract EVERY product (skip headers/titles).\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"],"rowIndex":2}\nIMPORTANT: include rowIndex (0-based row number from the spreadsheet). categoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
       );
+
       let products;
-      const cleaned=parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
-      const arrM=cleaned.match(/\[[\s\S]*\]/);
-      products=JSON.parse(arrM?arrM[0]:cleaned);
-      return res.json({products,fileName:fname});
+      const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      const arrM = cleaned.match(/\[[\s\S]*\]/);
+      products = JSON.parse(arrM ? arrM[0] : cleaned);
+
+      // Map images to products
+      if (embeddedImages.length > 0) {
+        if (imageAnchors.length > 0) {
+          // Use anchor mapping
+          products.forEach(p => {
+            const anchor = imageAnchors.find(a => a.row === p.rowIndex || a.row === (p.rowIndex - 1) || a.row === (p.rowIndex + 1));
+            if (anchor && embeddedImages[anchor.imageIdx]) {
+              p.imageB64 = embeddedImages[anchor.imageIdx].b64;
+              p.imageMime = embeddedImages[anchor.imageIdx].mime;
+            }
+          });
+        } else {
+          // Fallback: assign images sequentially to products
+          products.forEach((p, i) => {
+            if (i < embeddedImages.length) {
+              p.imageB64 = embeddedImages[i].b64;
+              p.imageMime = embeddedImages[i].mime;
+            }
+          });
+        }
+      }
+
+      return res.json({products, fileName: fname, imageCount: embeddedImages.length});
     } else {
-      // PDF — send directly to Claude as document
-      const fileB64=req.file.buffer.toString('base64');
-      const parseR=await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
-        [{type:'document',source:{type:'base64',media_type:'application/pdf',data:fileB64}},{type:'text',text:'Parse this supplier catalog. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"]}\nRules: categoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
+      // PDF
+      const fileB64 = req.file.buffer.toString('base64');
+      const parseR = await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
+        [{type:'document',source:{type:'base64',media_type:'application/pdf',data:fileB64}},{type:'text',text:'Parse this catalog. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[]}\ncategoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
       );
       let products;
-      const cleaned=parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
-      const arrM=cleaned.match(/\[[\s\S]*\]/);
-      products=JSON.parse(arrM?arrM[0]:cleaned);
-      return res.json({products,fileName:fname});
+      const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      const arrM = cleaned.match(/\[[\s\S]*\]/);
+      products = JSON.parse(arrM ? arrM[0] : cleaned);
+      return res.json({products, fileName: fname, imageCount: 0});
     }
   }catch(e){console.error('Parse:',e);res.status(500).json({error:e.message})}
 });
@@ -83,11 +152,12 @@ app.post('/api/generate-copy', async(req,res)=>{
     const ci=CATS[ck];const dimsF=fmtDims(p.dimensions);
     const content=[];
     if(images?.length)images.forEach(img=>content.push({type:'image',source:{type:'base64',media_type:'image/png',data:img}}));
-    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["obscure city NOT Paris/London/NYC/Milan/Tokyo","feminine name","abstract concept"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features. NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
+    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: Pick ONE from this pool that has NOT been used: '+NAME_POOL+'\n- NEVER use: '+getAvoidList()+'\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features. NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
     const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.',content);
     const cp=parseJSON(cpR);
     const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
     const title='The '+cp.creativeNames[0]+' '+typeCap;
+    usedNames.add(cp.creativeNames[0]);
     const rep=s=>(s||'').replace(/THE_PRODUCT_NAME/g,title);
     const cU=p.costUSD||300,wK=p.weightKg||estWeight(ck,parseInt(p.dimensions)||100);
     const sU=Math.round(wK*2.5),tL=cU+sU;
@@ -108,10 +178,11 @@ app.post('/api/extract', async(req,res)=>{
     const ex=parseJSON(exR);
     const ck=cKeys.includes(ex.categoryKey)?ex.categoryKey:'sofa';
     const ci=CATS[ck];const dimsF=fmtDims(ex.dimensions);
-    const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.','Create copy for: '+(ex.name||'Furniture')+', Material: '+(ex.material||'Premium')+', Category: '+ci.col+', Dims: '+(dimsF||ex.dimensions||'N/A')+'\nReturn JSON: {"creativeNames":["city","name","concept"],"htmlDescription":"<p> + <ul><li> specs, NO tables, use THE_PRODUCT_NAME","seoTitle":"THE_PRODUCT_NAME | Altera Home Design","seoDescription":"under 155 chars","tags":["5 tags"]}\nONLY JSON.');
+    const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.','Create copy for: '+(ex.name||'Furniture')+', Material: '+(ex.material||'Premium')+', Category: '+ci.col+', Dims: '+(dimsF||ex.dimensions||'N/A')+'\nReturn JSON: {"creativeNames":["CITY from: '+NAME_POOL.split(',').slice(0,40).join(',')+' — NEVER use: '+getAvoidList()+'","feminine name","concept"],"htmlDescription":"<p> + <ul><li> specs, NO tables, use THE_PRODUCT_NAME","seoTitle":"THE_PRODUCT_NAME | Altera Home Design","seoDescription":"under 155 chars","tags":["5 tags"]}\nONLY JSON.');
     const cp=parseJSON(cpR);
     const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
     const title='The '+cp.creativeNames[0]+' '+typeCap;
+    usedNames.add(cp.creativeNames[0]);
     const rep=s=>(s||'').replace(/THE_PRODUCT_NAME/g,title);
     const cU=ex.costUSD||300,wK=ex.weightKg||estWeight(ck,parseInt(ex.dimensions)||100);
     const sU=Math.round(wK*2.5),tL=cU+sU;

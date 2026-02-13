@@ -128,7 +128,7 @@ async function handleCatalog(file){
     const r=await fetch('/api/parse-catalog',{method:'POST',body:fd});
     if(!r.ok){const e=await r.json();throw new Error(e.error||'Parse failed')}
     const d=await r.json();
-    showL('Found '+d.products.length+' products...',60);
+    showL('Found '+d.products.length+' products'+(d.imageCount?' with '+d.imageCount+' images':'')+'...',60);
     D.products=d.products.map((p,i)=>({
       id:'p'+i, raw:p, title:'', catKey:p.categoryKey||'tv-cabinet',
       supplierName:p.supplierName||'Product '+(i+1), modelNumber:p.modelNumber||'',
@@ -136,7 +136,7 @@ async function handleCatalog(file){
       weightKg:p.weightKg||0, hasVariants:false, variant:null,
       htmlDescription:'', seoTitle:'', seoDescription:'', tags:[],
       metafields:p, brand:D.brand||'Altera Home Design', generated:false,
-      originalImages:[], aiImages:[], shopifyCategory:'', googleShoppingCat:'', type:''
+      originalImages:p.imageB64?[p.imageB64]:[], aiImages:[], shopifyCategory:'', googleShoppingCat:'', type:''
     }));
     hideL(); $('step0').style.display='none'; $('step1').style.display='';
     $('pcount').textContent=D.products.length;
