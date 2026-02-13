@@ -397,6 +397,7 @@ function fillProductRow(r,prod,v,isFirst){
     if(v.costUSD) r['Cost USD (product.metafields.custom.cost_usd)']=String(Math.round(v.costUSD));
     if(mf.material) r['Materials (product.metafields.custom.materials)']=mf.material;
     if(v.shipUSD) r['Shipping cost USD (product.metafields.custom.shipping_cost_usd)']=String(Math.round(v.shipUSD));
+    r['Shipping (product.metafields.custom.shipping)']='3-11 weeks';
   }
   r['Published']='false';r['Variant SKU']=v.sku||'';r['Variant Grams']=String((v.weightKg||0)*1000);
   r['Variant Inventory Tracker']='shopify';r['Variant Inventory Policy']='continue';
