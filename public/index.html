@@ -126,7 +126,11 @@ async function handleCatalog(file){
   const fd=new FormData(); fd.append('file',file);
   try{
     const r=await fetch('/api/parse-catalog',{method:'POST',body:fd});
-    if(!r.ok){const e=await r.json();throw new Error(e.error||'Parse failed')}
+    if(!r.ok){
+      const ct=r.headers.get('content-type')||'';
+      if(ct.includes('json')){const e=await r.json();throw new Error(e.error||'Parse failed')}
+      else{const t=await r.text();throw new Error('Server error '+r.status+': '+(t.substring(0,100)))}
+    }
     const d=await r.json();
     showL('Found '+d.products.length+' products'+(d.imageCount?' with '+d.imageCount+' images':'')+'...',60);
     D.products=d.products.map((p,i)=>({
@@ -249,17 +253,19 @@ async function runPhotoshoot(idx){
   const p=D.products[idx]; if(!p.originalImages?.length){toast('Add images first');return}
   const scenes=await getScenesForCat(p.catKey||'sofa');
   if(!p.aiImages)p.aiImages=[];
-  toast('Starting photoshoot: '+scenes.length+' scenes for '+p.title);
+  showL('Starting photoshoot: '+scenes.length+' scenes...',5);
   for(let i=0;i<scenes.length;i++){
     const sc=scenes[i];
+    const pct=Math.round(((i+1)/scenes.length)*100);
+    showL('Generating scene '+(i+1)+'/'+scenes.length+': '+sc.t+'...',pct);
     try{
       const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:p.originalImages,title:p.title,scene:sc.t,scenePrompt:sc.p||'',isStudio:!!sc.s,dimensions:p.dimensions||'',creative:'',catKey:p.catKey||'sofa'})});
       if(!r.ok){console.error('Scene failed:',sc.t);continue}
       const d=await r.json();
-      if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});D.activeTab=idx;renderEditor();toast('Scene '+(i+1)+'/'+scenes.length+': '+sc.t)}
+      if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});D.activeTab=idx;renderEditor();toast('✓ '+(i+1)+'/'+scenes.length+': '+sc.t)}
     }catch(e){console.error('Scene error:',e)}
   }
-  toast('Photoshoot complete: '+p.aiImages.length+' images');
+  hideL();toast('Photoshoot complete: '+p.aiImages.length+' images!');renderEditor();
 }
 
 // ═══ GENERATE COPY ═══
