@@ -137,10 +137,10 @@ async function handleCatalog(file){
       id:'p'+i, raw:p, title:'', catKey:p.categoryKey||'tv-cabinet',
       supplierName:p.supplierName||'Product '+(i+1), modelNumber:p.modelNumber||'',
       material:p.material||'', dimensions:p.dimensions||'', costUSD:p.costUSD||0,
-      weightKg:p.weightKg||0, hasVariants:false, variant:null,
+      weightKg:p.weightKg||0, hasVariants:p.hasVariants||false, variants:p.variants||[], variant:null,
       htmlDescription:'', seoTitle:'', seoDescription:'', tags:[],
       metafields:p, brand:D.brand||'Altera Home Design', generated:false,
-      originalImages:p.imageB64?[p.imageB64]:[], aiImages:[], shopifyCategory:'', googleShoppingCat:'', type:''
+      originalImages:p.imageB64?[p.imageB64, ...(p.extraImages||[]).map(x=>x.b64)]:[], aiImages:[], shopifyCategory:'', googleShoppingCat:'', type:''
     }));
     hideL(); $('step0').style.display='none'; $('step1').style.display='';
     $('pcount').textContent=D.products.length;

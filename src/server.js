@@ -52,81 +52,107 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
 
-      // Extract embedded images from xlsx (it's a zip file)
-      let embeddedImages = []; // array of {index, b64, mime}
-      let imageAnchors = []; // row->image mapping
+      // Extract images and map to rows using drawing XML
+      const rowImages = {}; // row number -> [{b64, mime}]
       try {
         const xlsxZip = await JSZip.loadAsync(req.file.buffer);
-        // Get all media files
+
+        // 1. Load all media files into a map: filename -> b64
+        const mediaMap = {};
         const mediaFiles = [];
         xlsxZip.forEach((path, entry) => {
           if (path.startsWith('xl/media/') && !entry.dir) mediaFiles.push({path, entry});
         });
-        // Sort by name to maintain order
-        mediaFiles.sort((a,b) => a.path.localeCompare(b.path));
         for (const {path, entry} of mediaFiles) {
-          const buf = await entry.async('base64');
-          const ext = path.split('.').pop().toLowerCase();
+          const b64 = await entry.async('base64');
+          const fn = path.split('/').pop(); // e.g. "image1.png"
+          const ext = fn.split('.').pop().toLowerCase();
           const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
-          embeddedImages.push({b64: buf, mime, filename: path.split('/').pop()});
+          mediaMap[fn] = {b64, mime};
         }
+        console.log('Media files loaded:', Object.keys(mediaMap));
 
-        // Try to parse drawing relationships to map images to rows
-        try {
-          const drawingRels = xlsxZip.file(/xl\/drawings\/_rels\/.*\.rels$/);
-          const drawingXml = xlsxZip.file(/xl\/drawings\/drawing\d+\.xml$/);
-          if (drawingXml.length > 0) {
-            const xml = await drawingXml[0].async('string');
-            // Extract row anchors from twoCellAnchor elements
-            const anchorMatches = xml.matchAll(/<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>[\s\S]*?<\/xdr:from>/g);
-            let idx = 0;
-            for (const m of anchorMatches) {
-              const rowNum = parseInt(m[1]);
-              if (idx < embeddedImages.length) {
-                imageAnchors.push({row: rowNum, imageIdx: idx});
-                idx++;
+        // 2. Parse relationships: rId -> image filename
+        const rIdMap = {}; // rId1 -> "image4.png"
+        const relsFiles = xlsxZip.file(/xl\/drawings\/_rels\/.*\.rels$/);
+        if (relsFiles.length > 0) {
+          const relsXml = await relsFiles[0].async('string');
+          const relMatches = relsXml.matchAll(/Id="(rId\d+)"[^>]*Target="[^"]*\/([^"\/]+)"/g);
+          for (const m of relMatches) {
+            rIdMap[m[1]] = m[2]; // rId1 -> image4.png
+          }
+        }
+        console.log('Relationship map:', rIdMap);
+
+        // 3. Parse drawing XML: extract row + rId for each anchor
+        const drawingFiles = xlsxZip.file(/xl\/drawings\/drawing\d+\.xml$/);
+        if (drawingFiles.length > 0) {
+          const xml = await drawingFiles[0].async('string');
+          // Split by anchor elements
+          const anchors = xml.split(/<xdr:(?:oneCellAnchor|twoCellAnchor)[>\s]/);
+          for (const anchor of anchors) {
+            // Extract row number
+            const rowMatch = anchor.match(/<xdr:row>(\d+)<\/xdr:row>/);
+            // Extract rId (r:embed="rId1")
+            const rIdMatch = anchor.match(/r:embed="(rId\d+)"/);
+            if (rowMatch && rIdMatch) {
+              const row = parseInt(rowMatch[1]);
+              const rId = rIdMatch[1];
+              const imgFilename = rIdMap[rId];
+              if (imgFilename && mediaMap[imgFilename]) {
+                if (!rowImages[row]) rowImages[row] = [];
+                rowImages[row].push(mediaMap[imgFilename]);
+                console.log('Mapped row', row, '->', imgFilename, 'via', rId);
               }
             }
           }
-        } catch(e) { console.log('Drawing parse skipped:', e.message); }
-      } catch(e) { console.log('Image extraction skipped:', e.message); }
+        }
+      } catch(e) { console.log('Image extraction error:', e.message); }
 
-      // Build text for Claude
-      const headerRow = rows[1] || rows[0] || []; // row[1] has actual headers usually
-      const textLines = rows.slice(0, 50).map(r => r.join(' | ')).join('\n');
+      console.log('Row-image mapping:', Object.keys(rowImages).map(r => 'row '+r+': '+rowImages[r].length+' imgs'));
 
-      const parseR = await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
-        [{type:'text',text:'Parse this spreadsheet data. Headers: '+headerRow.join(', ')+'\n\nData:\n'+textLines+'\n\nExtract EVERY product (skip headers/titles).\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"],"rowIndex":2}\nIMPORTANT: include rowIndex (0-based row number from the spreadsheet). categoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
-      );
+      // Also collect all images in order for Claude to see
+      const allImages = [];
+      Object.entries(rowImages).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).forEach(([row, imgs]) => {
+        imgs.forEach(img => allImages.push({...img, row: parseInt(row)}));
+      });
 
+      // Build Claude request with images so it can match them to products
+      const textLines = rows.slice(0, 50).map((r,i) => 'Row'+i+': '+r.join(' | ')).join('\n');
+      const content = [];
+      
+      // Add images for Claude to see
+      if(allImages.length > 0){
+        allImages.forEach((img, i) => {
+          content.push({type:'image',source:{type:'base64',media_type:img.mime,data:img.b64}});
+        });
+        content.push({type:'text',text:'Above are '+allImages.length+' product images extracted from a supplier Excel. They are in spreadsheet order.\n\nSpreadsheet data:\n'+textLines+'\n\nExtract EVERY product. IMPORTANT RULES:\n- If two rows are clearly the SAME product in different sizes (e.g. "Four-drawer chest" and "Five-drawer chest"), they should be ONE product with hasVariants:true and a variants array.\n- Match each image to the correct product by looking at what the image shows vs the product name.\n- imageIndices = array of 0-based indices into the images above that belong to this product.\n\nFor each product:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm like 200x40x45","costUSD":205,"weightKg":32,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":["walnut"],"style":["modern"],"furnitureMaterial":["wood"],"imageIndices":[0],"hasVariants":false,"variants":[]}\n\nIf hasVariants:true, set dimensions/costUSD/weightKg from the first variant and include:\n"variants":[{"sizeName":"Four-drawer","dimensions":"750x420x900","costUSD":205,"weightKg":30},{"sizeName":"Five-drawer","dimensions":"750x420x1090","costUSD":224,"weightKg":35}]\n\ncategoryKey MUST match list. costUSD=number. Return ONLY JSON array.'});
+      } else {
+        content.push({type:'text',text:'Parse this spreadsheet:\n'+textLines+'\n\nExtract EVERY product. If two rows are the SAME product in different sizes, combine as ONE product with hasVariants:true.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[],"hasVariants":false,"variants":[]}\ncategoryKey MUST match list. Return ONLY JSON array.'});
+      }
+
+      const parseR = await callClaude('You parse supplier furniture catalogs. You can see images and match them to products. Return ONLY a valid JSON array.', content);
       let products;
       const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
       const arrM = cleaned.match(/\[[\s\S]*\]/);
       products = JSON.parse(arrM ? arrM[0] : cleaned);
 
-      // Map images to products
-      if (embeddedImages.length > 0) {
-        if (imageAnchors.length > 0) {
-          // Use anchor mapping
-          products.forEach(p => {
-            const anchor = imageAnchors.find(a => a.row === p.rowIndex || a.row === (p.rowIndex - 1) || a.row === (p.rowIndex + 1));
-            if (anchor && embeddedImages[anchor.imageIdx]) {
-              p.imageB64 = embeddedImages[anchor.imageIdx].b64;
-              p.imageMime = embeddedImages[anchor.imageIdx].mime;
-            }
-          });
-        } else {
-          // Fallback: assign images sequentially to products
-          products.forEach((p, i) => {
-            if (i < embeddedImages.length) {
-              p.imageB64 = embeddedImages[i].b64;
-              p.imageMime = embeddedImages[i].mime;
-            }
-          });
+      // Attach images based on Claude's imageIndices
+      products.forEach(p => {
+        const indices = p.imageIndices || [];
+        if(indices.length > 0 && allImages[indices[0]]){
+          p.imageB64 = allImages[indices[0]].b64;
+          p.imageMime = allImages[indices[0]].mime;
+          if(indices.length > 1){
+            p.extraImages = indices.slice(1).filter(i=>allImages[i]).map(i=>({b64:allImages[i].b64, mime:allImages[i].mime}));
+          }
         }
-      }
+        delete p.imageIndices;
+      });
 
-      return res.json({products, fileName: fname, imageCount: embeddedImages.length});
+      const mapped = products.filter(p => p.imageB64).length;
+      console.log('Products:', products.length, 'with images:', mapped);
+      return res.json({products, fileName: fname, imageCount: Object.values(rowImages).flat().length, mappedCount: mapped});
     } else {
       // PDF
       const fileB64 = req.file.buffer.toString('base64');
