@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: altera-product-studio
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
