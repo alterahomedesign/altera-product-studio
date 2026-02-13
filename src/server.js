@@ -439,14 +439,15 @@ app.post('/api/export-bulk-zip', async(req,res)=>{
     products.forEach(prod=>{
       const handle=prod.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
       const variants=prod.hasVariants&&prod.variants?.length>1?prod.variants:[prod.variant||{}];
-      const imgs=[];
-      (prod.aiImages||[]).forEach(img=>{const fn=handle+'_'+img.scene.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.png';imgs.push({fn,alt:prod.title+' - '+img.scene});zip.file('images/'+fn,img.b64,{base64:true})});
-      (prod.originalImages||[]).forEach((b64,i)=>{const fn=handle+'_original_'+(i+1)+'.png';imgs.push({fn,alt:prod.title});zip.file('images/'+fn,b64,{base64:true})});
+      // Save images organized by product folder
+      const folder=handle;
+      (prod.aiImages||[]).forEach((img,i)=>{const fn=img.scene.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.png';zip.file(folder+'/'+fn,img.b64,{base64:true})});
+      (prod.originalImages||[]).forEach((b64,i)=>{zip.file(folder+'/original_'+(i+1)+'.png',b64,{base64:true})});
+      // CSV rows - no image references
       variants.forEach((v,i)=>{const r=emptyRow();r['Handle']=handle;fillProductRow(r,prod,v,i===0);if(prod.hasVariants&&variants.length>1){r['Option1 Name']='Size';r['Option1 Value']=v.sizeName}rows.push(r)});
-      imgs.forEach((f,i)=>{const r=emptyRow();r['Handle']=handle;r['Image Src']='images/'+f.fn;r['Image Position']=String(i+1);r['Image Alt Text']=f.alt;rows.push(r)});
     });
     zip.file('shopify_import.csv',CSV_H.map(esc).join(',')+'\n'+rows.map(r=>CSV_H.map(h=>esc(r[h])).join(',')).join('\n'));
-    zip.file('README.txt','Import: Products > Import > Upload CSV. Do NOT check overwrite.');
+    zip.file('README.txt','HOW TO IMPORT:\n1. Go to Shopify Admin > Products > Import\n2. Upload shopify_import.csv\n3. Do NOT check "Overwrite existing products"\n4. After import, open each product and upload its images from the matching folder\n\nImage folders are named by product handle (URL slug).');
     const buf=await zip.generateAsync({type:'nodebuffer'});
     res.set({'Content-Type':'application/zip','Content-Disposition':'attachment; filename="altera_bulk_package.zip"'});
     res.send(buf);
