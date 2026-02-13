@@ -1,325 +1,295 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Altera Product Studio</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Altera Product Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;background:#09090b;color:#e4e2de;font-family:'DM Sans',sans-serif}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px}
-@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes sp{to{transform:rotate(360deg)}}
-.fi{animation:fi .45s ease forwards}
-input,textarea,select{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#e4e2de;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%;transition:border .2s}
+*{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;background:#09090b;color:#e4e2de;font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sp{to{transform:rotate(360deg)}}.fi{animation:fi .4s ease forwards}
+input,textarea,select{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#e4e2de;border-radius:10px;padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%;transition:border .2s}
 input:focus,textarea:focus{border-color:#b8965a}
-.bp{background:linear-gradient(135deg,#b8965a,#8f6d3a);color:#09090b;border:none;border-radius:12px;padding:13px 24px;font-weight:700;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .25s;font-family:'DM Sans',sans-serif}
+.bp{background:linear-gradient(135deg,#b8965a,#8f6d3a);color:#09090b;border:none;border-radius:12px;padding:12px 22px;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .25s;font-family:'DM Sans',sans-serif}
 .bp:hover{box-shadow:0 6px 20px rgba(184,150,90,.25);transform:translateY(-1px)}.bp:disabled{opacity:.25;cursor:not-allowed;transform:none}
-.bs{background:rgba(255,255,255,.05);color:#ccc;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:11px 20px;font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.bs{background:rgba(255,255,255,.05);color:#ccc;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 18px;font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
 .bs:hover{background:rgba(255,255,255,.08)}
-.lb{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#666;margin-bottom:7px;display:block;font-family:'Space Mono',monospace}
-.cd{background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.05);border-radius:20px;padding:28px;margin-bottom:16px}
-.tg{display:inline-block;padding:3px 10px;border-radius:16px;font-size:9.5px;font-weight:600;background:rgba(184,150,90,.1);color:#b8965a;border:1px solid rgba(184,150,90,.18)}
-.mono{font-family:'Space Mono',monospace}
-.serif{font-family:'Playfair Display',serif}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.flex{display:flex;gap:10px;align-items:center}
-.fw{display:flex;gap:8px;flex-wrap:wrap}
-.vhdr{display:grid;grid-template-columns:1fr 1.4fr .8fr .6fr .5fr .5fr .9fr .7fr .3fr;gap:6px;padding:8px 0;font-weight:700;font-size:9px;color:#555;letter-spacing:.08em;text-transform:uppercase;font-family:'Space Mono',monospace;border-bottom:1px solid rgba(255,255,255,.06)}
-.vrow{display:grid;grid-template-columns:1fr 1.4fr .8fr .6fr .5fr .5fr .9fr .7fr .3fr;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px}
-.vrow input{padding:7px 8px}
-.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
-.icard{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1;cursor:pointer;border:3px solid transparent;transition:all .25s}
-.icard.sel{border-color:#b8965a}
-.icard img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
-.icard:hover img{transform:scale(1.04)}
-.iov{position:absolute;bottom:0;left:0;right:0;padding:10px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
-.toast{position:fixed;top:20px;right:20px;z-index:1000;background:#161618;border:1px solid rgba(184,150,90,.25);border-radius:14px;padding:12px 20px;font-size:12px;font-weight:600;box-shadow:0 16px 40px rgba(0,0,0,.5);display:none;align-items:center;gap:8px}
-.toast.show{display:flex}
-.lov{position:fixed;inset:0;z-index:900;background:rgba(9,9,11,.96);backdrop-filter:blur(24px);display:none;flex-direction:column;align-items:center;justify-content:center}
-.lov.show{display:flex}
-.spin{width:48px;height:48px;border:2.5px solid rgba(255,255,255,.05);border-top:2.5px solid #b8965a;border-radius:50%;animation:sp .9s linear infinite;margin-bottom:28px}
-.mspin{width:18px;height:18px;border:2px solid rgba(255,255,255,.05);border-top:2px solid #b8965a;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
-.dropzone{border:2px dashed rgba(255,255,255,.06);border-radius:18px;padding:40px;text-align:center;cursor:pointer;transition:border-color .2s}
-.dropzone:hover,.dropzone.over{border-color:rgba(184,150,90,.3)}
-.errbar{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:1000;background:#1f1012;border:1px solid #4a2028;border-radius:14px;padding:12px 20px;max-width:550px;font-size:12px;display:none;align-items:center;gap:10px}
-.errbar.show{display:flex}
-.modal{position:fixed;inset:0;z-index:800;background:rgba(9,9,11,.92);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center}
-.modal.show{display:flex}
-header{padding:16px 28px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.03);flex-wrap:wrap;gap:10px}
-main{max-width:1400px;margin:0 auto;padding:28px 28px 72px}
+.lb{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#666;margin-bottom:6px;display:block;font-family:'Space Mono',monospace}
+.cd{background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:24px;margin-bottom:14px}
+.tg{display:inline-block;padding:3px 10px;border-radius:16px;font-size:9px;font-weight:600;background:rgba(184,150,90,.1);color:#b8965a;border:1px solid rgba(184,150,90,.18);margin:2px}
+.mono{font-family:'Space Mono',monospace}.serif{font-family:'Playfair Display',serif}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.flex{display:flex;gap:10px;align-items:center}.fw{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;top:20px;right:20px;z-index:1000;background:#161618;border:1px solid rgba(184,150,90,.25);border-radius:14px;padding:12px 20px;font-size:12px;font-weight:600;box-shadow:0 16px 40px rgba(0,0,0,.5);display:none;align-items:center;gap:8px}.toast.show{display:flex}
+.errbar{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:1000;background:#1f1012;border:1px solid #4a2028;border-radius:14px;padding:12px 20px;max-width:550px;font-size:12px;display:none;align-items:center;gap:10px}.errbar.show{display:flex}
+.lov{position:fixed;inset:0;z-index:900;background:rgba(9,9,11,.96);backdrop-filter:blur(24px);display:none;flex-direction:column;align-items:center;justify-content:center}.lov.show{display:flex}
+.spin{width:48px;height:48px;border:2.5px solid rgba(255,255,255,.05);border-top:2.5px solid #b8965a;border-radius:50%;animation:sp .9s linear infinite;margin-bottom:24px}
+.mspin{width:16px;height:16px;border:2px solid rgba(255,255,255,.05);border-top:2px solid #b8965a;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+.dropzone{border:2px dashed rgba(255,255,255,.06);border-radius:16px;padding:36px;text-align:center;cursor:pointer;transition:border-color .2s}.dropzone:hover,.dropzone.over{border-color:rgba(184,150,90,.3)}
 .sell-in{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#b8965a;background:rgba(184,150,90,.04);border-color:rgba(184,150,90,.15)}
-</style>
-</head>
-<body>
-
-<div id="toast" class="toast"><div style="width:7px;height:7px;border-radius:50%;background:#b8965a"></div><span id="toast-msg"></span></div>
+header{padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.03);flex-wrap:wrap;gap:8px}
+main{max-width:1400px;margin:0 auto;padding:24px 24px 60px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);overflow-x:auto}
+.tab{padding:8px 16px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);color:#888;white-space:nowrap;transition:all .2s}
+.tab.active{background:rgba(184,150,90,.1);border-color:rgba(184,150,90,.25);color:#b8965a}
+.tab:hover{background:rgba(255,255,255,.06)}
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px}
+.icard{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1;cursor:pointer;border:3px solid transparent;transition:all .2s}.icard.sel{border-color:#b8965a}
+.icard img{width:100%;height:100%;object-fit:cover}
+.iov{position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+</style></head><body>
+<div id="toast" class="toast"><div style="width:6px;height:6px;border-radius:50%;background:#b8965a"></div><span id="toast-msg"></span></div>
 <div id="errbar" class="errbar"><span style="color:#ef4444">⚠</span><span id="err-msg" style="flex:1"></span><button onclick="hideErr()" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px">×</button></div>
-<div id="lov" class="lov"><div class="spin"></div><p id="lov-text" class="serif" style="font-size:24px;font-weight:400;margin-bottom:14px;text-align:center;max-width:380px"></p><div style="width:260px;height:2.5px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="lov-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#b8965a,#8f6d3a);transition:width .6s ease"></div></div></div>
-
-<!-- SETTINGS -->
-<div id="settings" class="modal" onclick="if(event.target===this)toggleSettings()">
-<div class="cd fi" style="max-width:480px;width:90%;max-height:85vh;overflow-y:auto;background:#131315;border:1px solid rgba(255,255,255,.07)">
-  <div style="display:flex;justify-content:space-between;margin-bottom:28px"><h2 class="serif" style="font-size:22px">Settings</h2><button onclick="toggleSettings()" style="background:none;border:none;color:#666;font-size:22px;cursor:pointer">×</button></div>
-  <div style="display:flex;flex-direction:column;gap:20px">
-    <div><label class="lb">Default Brand / Vendor</label><input id="s-brand" placeholder="Rainbow Furniture"><p style="font-size:10px;color:#444;margin-top:4px">Persists across sessions</p></div>
-    <div class="g2">
-      <div><label class="lb">USD→CAD Rate</label><input id="s-fx" type="number" step=".01" value="1.44"></div>
-      <div><label class="lb">Markup</label><input id="s-mk" type="number" step=".1" value="3"></div>
-    </div>
-    <p style="font-size:10px;color:#444">Shipping: $2.50/kg · API keys configured server-side via environment variables</p>
-    <div id="api-status" style="padding:14px;border-radius:10px;background:rgba(255,255,255,.02);font-size:11px"></div>
-    <button class="bp" style="width:100%" onclick="saveSettings()">Save & Close</button>
-  </div>
-</div>
-</div>
+<div id="lov" class="lov"><div class="spin"></div><p id="lov-text" class="serif" style="font-size:22px;text-align:center;max-width:360px"></p><div style="width:240px;height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-top:16px"><div id="lov-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#b8965a,#8f6d3a);transition:width .5s"></div></div></div>
 
 <header>
-  <div class="flex"><span class="serif" style="font-size:20px;font-weight:600"><span style="color:#b8965a">Altera</span><span style="color:#4a4a4a;font-weight:400;font-size:13px;margin-left:6px">Product Studio</span></span></div>
+  <div class="flex"><span class="serif" style="font-size:18px;font-weight:600"><span style="color:#b8965a">Altera</span><span style="color:#4a4a4a;font-weight:400;font-size:12px;margin-left:5px">Product Studio</span></span></div>
   <div class="flex" style="flex-wrap:wrap">
-    <span id="h-brand" style="font-size:10px;color:#666;font-family:'Space Mono',monospace;padding:5px 10px;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid rgba(255,255,255,.04);display:none"></span>
-    <span id="h-fx" class="mono" style="font-size:10px;color:#b8965a;padding:5px 10px;background:rgba(184,150,90,.06);border-radius:8px;border:1px solid rgba(184,150,90,.12)">1 USD = 1.44 CAD</span>
-    <button class="bs" style="padding:7px 14px;font-size:10px" onclick="toggleSettings()">⚙ Settings</button>
-    <button id="btn-new" class="bs" style="padding:7px 14px;font-size:10px;display:none" onclick="startNew()">+ New</button>
+    <span id="h-fx" class="mono" style="font-size:9px;color:#b8965a;padding:4px 10px;background:rgba(184,150,90,.06);border-radius:8px">1 USD = 1.44 CAD</span>
+    <button class="bs" style="padding:6px 12px;font-size:9px" onclick="toggleSettings()">⚙</button>
   </div>
 </header>
 
 <main>
-  <!-- UPLOAD -->
-  <div id="step0" class="fi" style="max-width:640px;margin:0 auto">
-    <div style="text-align:center;margin-bottom:40px">
-      <h1 class="serif" style="font-size:42px;font-weight:400;line-height:1.1;margin-bottom:12px">New <span style="font-style:italic;color:#b8965a">Product</span></h1>
-      <p style="color:#555;font-size:13px;max-width:420px;margin:0 auto">Upload images & spec sheets. AI extracts data, writes copy, calculates pricing, renders photoshoot, and exports Shopify CSV + ZIP.</p>
-    </div>
-    <div class="cd">
-      <label class="lb">Product Images & Spec Sheets</label>
-      <div id="dz" class="dropzone" onclick="$('fi').click()">
-        <input id="fi" type="file" multiple accept="image/*" style="display:none" onchange="handleFiles(this.files)">
-        <div style="width:48px;height:48px;border-radius:14px;background:rgba(184,150,90,.07);border:1px solid rgba(184,150,90,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;color:#b8965a">+</div>
-        <p style="font-size:12px;font-weight:600">Drop images or click to browse</p>
-      </div>
-      <div id="thumbs" class="fw" style="margin-top:16px"></div>
-    </div>
-    <div class="cd"><label class="lb">Creative Direction (Optional)</label><textarea id="creative" placeholder="e.g. Ultra bright morning light, vibrant florals..." style="height:70px;resize:none"></textarea></div>
-    <button id="btn-go" class="bp" style="width:100%;padding:16px 24px" disabled onclick="runExtract()">Analyze → Generate →</button>
+<!-- STEP 0: UPLOAD -->
+<div id="step0" class="fi" style="max-width:640px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:36px">
+    <h1 class="serif" style="font-size:38px;font-weight:400;line-height:1.1;margin-bottom:10px">Product <span style="font-style:italic;color:#b8965a">Studio</span></h1>
+    <p style="color:#555;font-size:12px;max-width:420px;margin:0 auto">Upload a supplier catalog (Excel/PDF) or product images. AI extracts all products, generates copy, pricing, and Shopify-ready CSV.</p>
   </div>
+  <div class="cd">
+    <label class="lb">Supplier Catalog (Excel or PDF)</label>
+    <div class="dropzone" onclick="$('cf').click()" id="cdz">
+      <input id="cf" type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="handleCatalog(this.files[0])">
+      <div style="font-size:28px;margin-bottom:8px">📋</div>
+      <p style="font-size:12px;font-weight:600">Drop catalog or click to browse</p>
+      <p style="font-size:10px;color:#555;margin-top:4px">Excel, PDF, or CSV — all products extracted</p>
+    </div>
+  </div>
+  <div style="text-align:center;color:#444;font-size:11px;margin:16px 0">— or —</div>
+  <div class="cd">
+    <label class="lb">Single Product Images</label>
+    <div class="dropzone" onclick="$('fi').click()" id="idz">
+      <input id="fi" type="file" multiple accept="image/*" style="display:none" onchange="handleImages(this.files)">
+      <div style="font-size:28px;margin-bottom:8px">🖼️</div>
+      <p style="font-size:12px;font-weight:600">Drop images or click to browse</p>
+    </div>
+    <div id="thumbs" class="fw" style="margin-top:12px"></div>
+  </div>
+  <button id="btn-go" class="bp" style="width:100%;padding:14px" disabled onclick="runSingle()">Analyze & Generate →</button>
+</div>
 
-  <!-- REVIEW -->
-  <div id="step2" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">
-      <div><h2 class="serif" style="font-size:28px;font-weight:400">Review & <span style="font-style:italic;color:#b8965a">Export</span></h2><p style="color:#4a4a4a;font-size:12px;margin-top:3px"><span id="r-cat" class="tg" style="margin-right:8px"></span><span id="r-info"></span></p></div>
-      <button class="bs" onclick="startNew()">+ New Product</button>
-    </div>
-    <div class="g2" style="margin-bottom:24px">
-      <div>
-        <div class="cd"><label class="lb">Product Title</label><input id="f-title" class="serif" style="font-size:16px;font-weight:600;padding:14px 16px" oninput="onTitleChange()"><div id="names" class="fw" style="margin-top:10px"></div><p style="font-size:10px;color:#444;margin-top:8px">Changing title auto-updates description & SEO</p></div>
-        <div class="cd"><label class="lb">HTML Description</label><textarea id="f-desc" style="height:180px;resize:vertical;font-family:'Space Mono',monospace;font-size:10.5px;line-height:1.6" oninput="$('dprev').innerHTML=this.value"></textarea><details style="margin-top:10px"><summary style="font-size:10px;color:#555;cursor:pointer">Preview</summary><div id="dprev" style="margin-top:8px;padding:14px;background:rgba(255,255,255,.015);border-radius:10px;font-size:12.5px;line-height:1.6"></div></details></div>
-        <div class="g2"><div class="cd"><label class="lb">Brand</label><input id="f-brand"></div><div class="cd"><label class="lb">Type</label><input id="f-type"></div></div>
-        <div class="cd"><label class="lb">Shopify Category</label><input id="f-scat"></div>
-      </div>
-      <div>
-        <div class="cd"><label class="lb">SEO Title</label><input id="f-seot" oninput="$('seotc').textContent=this.value.length+'/60'"><span id="seotc" class="mono" style="font-size:9px;color:#444">0/60</span></div>
-        <div class="cd"><label class="lb">SEO Description</label><textarea id="f-seod" style="height:65px;resize:none" oninput="$('seodc').textContent=this.value.length+'/155'"></textarea><span id="seodc" class="mono" style="font-size:9px;color:#444">0/155</span></div>
-        <div class="cd"><label class="lb">Tags</label><textarea id="f-tags" style="height:50px;resize:none" oninput="renderTags()"></textarea><div id="tagsd" class="fw" style="margin-top:6px"></div></div>
-        <div class="cd" style="background:rgba(184,150,90,.025);border-color:rgba(184,150,90,.1)">
-          <label class="lb" style="color:#b8965a">Pricing Engine</label>
-          <div class="g3" style="margin-bottom:12px">
-            <div><span style="font-size:9px;color:#666;display:block">FX Rate</span><span id="pe-fx" class="mono" style="font-size:15px;font-weight:700">1.44</span></div>
-            <div><span style="font-size:9px;color:#666;display:block">Ship</span><span class="mono" style="font-size:15px;font-weight:700">$2.50/kg</span></div>
-            <div><span style="font-size:9px;color:#666;display:block">Markup</span><input id="pe-mk" type="number" step=".1" value="3" class="mono" style="width:65px;padding:5px 8px;font-size:15px;font-weight:700;text-align:center" onchange="recalcAll()"></div>
-          </div>
-          <p id="pe-f" style="font-size:9px;color:#555"></p>
-        </div>
-      </div>
-    </div>
-    <div class="cd">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><label class="lb" style="margin-bottom:0"><span id="vc">0</span> Variants</label><button class="bs" style="padding:6px 14px;font-size:9.5px" onclick="addVar()">+ Add</button></div>
-      <div class="vhdr"><span>Size</span><span>Dimensions</span><span>SKU</span><span>Cost $</span><span>Ship $</span><span>Land CAD</span><span>Sell CAD</span><span>Weight</span><span></span></div>
-      <div id="vbody"></div>
-    </div>
-    <!-- PHOTOSHOOT -->
-    <div class="cd">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div class="flex"><span style="font-size:18px">📸</span><label class="lb" style="margin-bottom:0">AI Photoshoot</label><span id="ps" style="font-size:10px;color:#555"></span></div>
-        <div class="flex"><button id="btn-sel" class="bs" style="padding:6px 12px;font-size:9.5px;display:none" onclick="toggleSelAll()">Select All</button></div>
-      </div>
-      <p id="ps-idle" style="font-size:12px;color:#555">Photoshoot will auto-start after extraction...</p>
-      <div id="pgrid" class="igrid"></div>
-    </div>
-    <!-- EXPORT -->
-    <div class="cd" style="background:rgba(184,150,90,.02);border-color:rgba(184,150,90,.08)">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
-        <div><h3 class="serif" style="font-size:18px;margin-bottom:3px">Export</h3><p id="exp-info" style="color:#555;font-size:11px"></p></div>
-        <div class="flex" style="flex-wrap:wrap">
-          <button class="bs" onclick="dlImages()">↓ Images</button>
-          <button class="bs" onclick="dlZip()">↓ ZIP + CSV</button>
-          <button class="bp" onclick="dlCSV()">↓ Shopify CSV</button>
-        </div>
-      </div>
+<!-- STEP 1: PRODUCT TABS + EDITOR -->
+<div id="step1" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+    <h2 class="serif" style="font-size:24px"><span id="pcount">0</span> Products</h2>
+    <div class="flex" style="flex-wrap:wrap">
+      <button class="bs" onclick="genAllCopy()" id="btn-genall">✨ Generate All Copy</button>
+      <button class="bs" onclick="dlBulkCSV()">↓ Bulk CSV</button>
+      <button class="bp" onclick="dlBulkZip()">↓ Bulk ZIP</button>
     </div>
   </div>
+  <div id="tabs" class="tabs"></div>
+  <div id="editor"></div>
+</div>
 </main>
 
 <script>
-// ═══ STATE ═══
-const D={imgs:[],b64s:[],title:'',oldTitle:'',catKey:'sofa',vars:[],mCopy:null,aiImgs:[],selIds:new Set(),fxRate:1.44,markup:3,brand:'',creative:''};
 const $=id=>document.getElementById(id);
+const D={products:[],activeTab:0,imgs:[],b64s:[],fxRate:1.44,markup:3,brand:'',settings:{}};
 const SCENES=[{t:'Studio Front',s:1},{t:'Three-Quarter View',s:1},{t:'Japandi'},{t:'Coastal Living'},{t:'Scandinavian Modern'},{t:'Editorial Loft'},{t:'Luxury Lounge'},{t:'Industrial Chic'},{t:'Close-up Detail'},{t:'Close-up Texture'}];
-
-// ═══ INIT ═══
-(async()=>{
-  D.brand=localStorage.getItem('ap_brand')||'';
-  D.fxRate=parseFloat(localStorage.getItem('ap_fx'))||1.44;
-  D.markup=parseFloat(localStorage.getItem('ap_mk'))||3;
-  $('s-brand').value=D.brand;$('s-fx').value=D.fxRate;$('s-mk').value=D.markup;
-  updHdr();
-  // FX rate
-  try{const r=await fetch('https://api.exchangerate-api.com/v4/latest/USD');const d=await r.json();if(d.rates?.CAD){D.fxRate=d.rates.CAD;$('s-fx').value=D.fxRate.toFixed(4);updHdr()}}catch{}
-  // Health check
-  try{const r=await fetch('/api/health');const d=await r.json();$('api-status').innerHTML=(d.claude?'<span style="color:#22c55e">✓</span>':'<span style="color:#ef4444">✗</span>')+' Claude API &nbsp;&nbsp;'+(d.gemini?'<span style="color:#22c55e">✓</span>':'<span style="color:#ef4444">✗</span>')+' Gemini API'}catch{$('api-status').textContent='Cannot reach server'}
-  // Drop
-  const dz=$('dz');
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFiles(e.dataTransfer.files)});
-})();
-
-function updHdr(){$('h-fx').textContent='1 USD = '+D.fxRate.toFixed(2)+' CAD';if(D.brand){$('h-brand').textContent=D.brand;$('h-brand').style.display=''}else $('h-brand').style.display='none'}
-function showL(t,p){$('lov-text').textContent=t;$('lov-bar').style.width=p+'%';$('lov').classList.add('show')}
-function hideL(){$('lov').classList.remove('show')}
 function toast(m){$('toast-msg').textContent=m;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function showErr(m){$('err-msg').textContent=m;$('errbar').classList.add('show')}
 function hideErr(){$('errbar').classList.remove('show')}
-function toggleSettings(){$('settings').classList.toggle('show')}
-function saveSettings(){D.brand=$('s-brand').value.trim();D.fxRate=parseFloat($('s-fx').value)||1.44;D.markup=parseFloat($('s-mk').value)||3;localStorage.setItem('ap_brand',D.brand);localStorage.setItem('ap_fx',D.fxRate);localStorage.setItem('ap_mk',D.markup);updHdr();toggleSettings();toast('Saved!')}
-function updExp(){$('exp-info').textContent=D.selIds.size+' images · '+D.vars.length+' variants · '+D.title}
+function showL(t,p){$('lov-text').textContent=t;$('lov-bar').style.width=p+'%';$('lov').classList.add('show')}
+function hideL(){$('lov').classList.remove('show')}
+function toggleSettings(){/* TODO */}
 
-// ═══ FILES ═══
+(async()=>{
+  D.brand=localStorage.getItem('ap_brand')||'';D.fxRate=parseFloat(localStorage.getItem('ap_fx'))||1.44;D.markup=parseFloat(localStorage.getItem('ap_mk'))||3;
+  $('h-fx').textContent='1 USD = '+D.fxRate.toFixed(2)+' CAD';
+  try{const r=await fetch('https://api.exchangerate-api.com/v4/latest/USD');const d=await r.json();if(d.rates?.CAD){D.fxRate=d.rates.CAD;$('h-fx').textContent='1 USD = '+D.fxRate.toFixed(2)+' CAD'}}catch{}
+  ['cdz','idz'].forEach(id=>{const el=$(id);el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('over')});el.addEventListener('dragleave',()=>el.classList.remove('over'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('over');if(id==='cdz')handleCatalog(e.dataTransfer.files[0]);else handleImages(e.dataTransfer.files)})});
+})();
+
+// ═══ FILE HANDLING ═══
 const f2b=f=>new Promise(r=>{const x=new FileReader();x.onloadend=()=>r(x.result);x.readAsDataURL(f)});
-async function handleFiles(files){for(const f of Array.from(files)){const b=await f2b(f);D.imgs.push(b);D.b64s.push(b.split(',')[1])}renderThumbs();$('btn-go').disabled=!D.imgs.length}
-function renderThumbs(){$('thumbs').innerHTML='';D.imgs.forEach((img,i)=>{const d=document.createElement('div');d.style.cssText='width:88px;height:88px;border-radius:14px;overflow:hidden;position:relative;border:2px solid rgba(255,255,255,.05)';d.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover"><button onclick="rmImg('+i+')" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(220,50,50,.85);border:none;color:#fff;font-size:11px;cursor:pointer">×</button>';$('thumbs').appendChild(d)})}
-function rmImg(i){D.imgs.splice(i,1);D.b64s.splice(i,1);renderThumbs();$('btn-go').disabled=!D.imgs.length}
+async function handleImages(files){for(const f of Array.from(files)){const b=await f2b(f);D.imgs.push(b);D.b64s.push(b.split(',')[1])}renderThumbs();$('btn-go').disabled=!D.imgs.length}
+function renderThumbs(){$('thumbs').innerHTML='';D.imgs.forEach((img,i)=>{const d=document.createElement('div');d.style.cssText='width:72px;height:72px;border-radius:12px;overflow:hidden;position:relative;border:2px solid rgba(255,255,255,.05)';d.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover"><button onclick="D.imgs.splice('+i+',1);D.b64s.splice('+i+',1);renderThumbs();$(\'btn-go\').disabled=!D.imgs.length" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(220,50,50,.85);border:none;color:#fff;font-size:10px;cursor:pointer">×</button>';$('thumbs').appendChild(d)})}
 
-// ═══ EXTRACT ═══
-async function runExtract(){
-  if(!D.imgs.length)return;hideErr();
-  showL('Analyzing product images...',10);
+// ═══ CATALOG PARSE ═══
+async function handleCatalog(file){
+  if(!file)return; hideErr();
+  showL('Parsing catalog: '+file.name+'...',15);
+  const fd=new FormData(); fd.append('file',file);
   try{
-    showL('Sending to AI for extraction & copy...',25);
-    const r=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:D.b64s,creative:$('creative').value,fxRate:D.fxRate,markup:D.markup,brand:D.brand})});
-    if(!r.ok){const e=await r.json();throw new Error(e.error||'Server error '+r.status)}
+    const r=await fetch('/api/parse-catalog',{method:'POST',body:fd});
+    if(!r.ok){const e=await r.json();throw new Error(e.error||'Parse failed')}
     const d=await r.json();
-    D.title=d.title;D.oldTitle=d.title;D.catKey=d.catKey;D.vars=d.variants;D.mCopy=d;D.creative=$('creative').value;
-
-    // Fill form
-    $('f-title').value=d.title;$('f-desc').value=d.htmlDescription;$('f-seot').value=d.seoTitle;$('f-seod').value=d.seoDescription;
-    $('f-tags').value=d.tags.join(', ');$('f-brand').value=d.brand;$('f-type').value=d.type;$('f-scat').value=d.shopifyCategory;
-    $('pe-fx').textContent=D.fxRate.toFixed(2);$('pe-mk').value=D.markup;
-    $('pe-f').textContent='(Cost+Ship) × '+D.fxRate.toFixed(2)+' × '+D.markup+'x → $5 rounding';
-    $('r-cat').textContent=d.collection;$('r-info').textContent=d.variants.length+' variants';
-    $('seotc').textContent=d.seoTitle.length+'/60';$('seodc').textContent=d.seoDescription.length+'/155';
-    $('dprev').innerHTML=d.htmlDescription;
-
-    // Name suggestions
-    $('names').innerHTML='';
-    (d.creativeNames||[]).forEach(n=>{const b=document.createElement('button');b.style.cssText='padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#888;font-size:11px;cursor:pointer';b.textContent=n;b.onclick=()=>{const tc=d.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');setTitle('The '+n+' '+tc)};$('names').appendChild(b)});
-
-    renderVars();renderTags();hideL();
-    $('step0').style.display='none';$('step2').style.display='';$('btn-new').style.display='';
-    updExp();
-
-    // Auto-start photoshoot
-    runPhotoshoot();
+    showL('Found '+d.products.length+' products...',60);
+    D.products=d.products.map((p,i)=>({
+      id:'p'+i, raw:p, title:'', catKey:p.categoryKey||'tv-cabinet',
+      supplierName:p.supplierName||'Product '+(i+1), modelNumber:p.modelNumber||'',
+      material:p.material||'', dimensions:p.dimensions||'', costUSD:p.costUSD||0,
+      weightKg:p.weightKg||0, hasVariants:false, variant:null,
+      htmlDescription:'', seoTitle:'', seoDescription:'', tags:[],
+      metafields:p, brand:D.brand||'Altera Home Design', generated:false,
+      originalImages:[], aiImages:[], shopifyCategory:'', googleShoppingCat:'', type:''
+    }));
+    hideL(); $('step0').style.display='none'; $('step1').style.display='';
+    $('pcount').textContent=D.products.length;
+    renderTabs(); renderEditor();
   }catch(e){hideL();showErr(e.message)}
 }
 
-// ═══ TITLE SYNC ═══
-function setTitle(t){$('f-title').value=t;D.title=t;onTitleChange()}
-function onTitleChange(){
-  const n=$('f-title').value;
-  if(D.oldTitle&&n!==D.oldTitle){$('f-desc').value=$('f-desc').value.replaceAll(D.oldTitle,n);$('f-seot').value=$('f-seot').value.replaceAll(D.oldTitle,n);$('f-seod').value=$('f-seod').value.replaceAll(D.oldTitle,n);$('dprev').innerHTML=$('f-desc').value}
-  D.oldTitle=n;D.title=n;updExp();
+// ═══ SINGLE IMAGE MODE ═══
+async function runSingle(){
+  if(!D.imgs.length)return;hideErr();
+  showL('Analyzing images...',20);
+  try{
+    const r=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:D.b64s,fxRate:D.fxRate,markup:D.markup,brand:D.brand})});
+    if(!r.ok){const e=await r.json();throw new Error(e.error)}
+    const d=await r.json();
+    D.products=[{id:'p0',raw:d,title:d.title,catKey:d.catKey,supplierName:d.title,modelNumber:'',material:d.metafields?.material||'',dimensions:d.variant?.dimensions||'',costUSD:d.variant?.costUSD||0,weightKg:d.variant?.weightKg||0,hasVariants:d.hasVariants||false,variant:d.variant,htmlDescription:d.htmlDescription,seoTitle:d.seoTitle,seoDescription:d.seoDescription,tags:d.tags||[],creativeNames:d.creativeNames,metafields:d.metafields||{},brand:d.brand,generated:true,originalImages:D.b64s,aiImages:[],shopifyCategory:d.shopifyCategory,googleShoppingCat:d.googleShoppingCat,type:d.type,collection:d.collection}];
+    hideL();$('step0').style.display='none';$('step1').style.display='';$('pcount').textContent='1';
+    renderTabs();renderEditor();
+  }catch(e){hideL();showErr(e.message)}
 }
 
-// ═══ VARIANTS ═══
-function renderVars(){
-  $('vbody').innerHTML='';D.vars.forEach((v,i)=>{const r=document.createElement('div');r.className='vrow';r.innerHTML=`<input value="${v.sizeName}" onchange="D.vars[${i}].sizeName=this.value"><input value="${v.dimsF||''}" onchange="D.vars[${i}].dimsF=this.value" class="mono" style="font-size:10px"><input value="${v.sku}" onchange="D.vars[${i}].sku=this.value" class="mono" style="font-size:10px"><input type="number" value="${v.costUSD}" onchange="updCost(${i},this.value)" class="mono"><span class="mono" style="font-size:10px;color:#555">$${v.shipUSD}</span><span class="mono" style="font-size:10px;color:#888">$${Math.round(v.landedUSD*D.fxRate)}</span><input type="number" value="${v.sellCAD}" onchange="D.vars[${i}].sellCAD=+this.value" class="sell-in"><span class="mono" style="font-size:10px;color:#555">${v.weightKg}kg</span><button onclick="D.vars.splice(${i},1);renderVars()" style="background:none;border:none;color:#444;cursor:pointer;font-size:14px">×</button>`;$('vbody').appendChild(r)});$('vc').textContent=D.vars.length;updExp();
+// ═══ TABS ═══
+function renderTabs(){
+  $('tabs').innerHTML='';
+  D.products.forEach((p,i)=>{
+    const t=document.createElement('div');t.className='tab'+(i===D.activeTab?' active':'');
+    t.textContent=(p.title||p.supplierName||'Product '+(i+1)).substring(0,25);
+    t.onclick=()=>{D.activeTab=i;renderTabs();renderEditor()};
+    if(p.generated)t.style.borderLeftColor='#22c55e';
+    $('tabs').appendChild(t);
+  });
 }
-function updCost(i,v){const c=+v||0,d=D.vars[i];d.costUSD=c;d.landedUSD=c+d.shipUSD;d.costCAD=Math.round(c*D.fxRate);d.sellCAD=Math.round((d.landedUSD*D.fxRate*(+$('pe-mk').value||3))/5)*5;renderVars()}
-function addVar(){D.vars.push({id:'v'+D.vars.length,sizeName:'200cm',dimensions:'200x85x80',dimsF:'200cm (78 3/4") length x 85cm (33 1/2") width x 80cm (31 1/2") height',costUSD:300,shipUSD:125,landedUSD:425,costCAD:Math.round(300*D.fxRate),weightKg:50,sellCAD:Math.round((425*D.fxRate*D.markup)/5)*5,sku:'PROD-200CM'});renderVars()}
-function recalcAll(){const mk=+$('pe-mk').value||3;D.vars.forEach(v=>{v.sellCAD=Math.round((v.landedUSD*D.fxRate*mk)/5)*5});$('pe-f').textContent='(Cost+Ship) × '+D.fxRate.toFixed(2)+' × '+mk+'x → $5 rounding';renderVars()}
-function renderTags(){$('tagsd').innerHTML=$('f-tags').value.split(',').map(s=>s.trim()).filter(Boolean).map(s=>'<span class="tg">'+s+'</span>').join('')}
 
-// ═══ PHOTOSHOOT ═══
-async function runPhotoshoot(){
-  $('ps-idle').style.display='none';$('ps').textContent='Starting...';$('ps').style.color='#b8965a';
-  D.aiImgs=[];D.selIds=new Set();$('pgrid').innerHTML='';
-  const dims=D.vars[0]?D.vars[0].dimensions+' CM':'standard';
+// ═══ EDITOR ═══
+function renderEditor(){
+  const p=D.products[D.activeTab]; if(!p)return;
+  const v=p.variant||{};
+  $('editor').innerHTML=`<div class="fi">
+  <div class="cd" style="background:rgba(184,150,90,.02);border-color:rgba(184,150,90,.08)">
+    <div class="flex" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><span class="lb" style="margin-bottom:2px">Supplier</span><span style="font-size:14px;font-weight:600">${p.supplierName}</span><span class="mono" style="font-size:10px;color:#555;margin-left:8px">${p.modelNumber||''}</span></div>
+      <div class="flex"><span class="mono" style="font-size:10px;color:#888">${p.material} · ${p.dimensions} · $${p.costUSD} USD · ${p.weightKg}kg</span>
+      ${!p.generated?'<button class="bp" style="padding:8px 16px" onclick="genCopy('+D.activeTab+')">✨ Generate Copy</button>':'<span class="tg" style="background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.2)">Generated</span>'}</div>
+    </div>
+  </div>
+  ${p.generated?renderProductForm(p):'<div style="text-align:center;padding:40px;color:#555"><p>Click "Generate Copy" to create title, description, SEO, and pricing for this product.</p></div>'}
+  </div>`;
+}
 
-  for(let i=0;i<SCENES.length;i++){
-    const sc=SCENES[i];
-    $('ps').textContent=sc.t+' ('+(i+1)+'/'+SCENES.length+')';
+function renderProductForm(p){
+  const v=p.variant||{};
+  return `<div class="g2">
+  <div>
+    <div class="cd"><label class="lb">Product Title</label><input value="${esc(p.title)}" class="serif" style="font-size:15px;font-weight:600" onchange="updP('title',this.value)">
+    ${(p.creativeNames||[]).map(n=>'<button style="margin:4px 2px 0;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#888;font-size:10px;cursor:pointer" onclick="setName('+D.activeTab+',\''+esc(n)+'\')">'+n+'</button>').join('')}</div>
+    <div class="cd"><label class="lb">HTML Description</label><textarea style="height:160px;resize:vertical;font-family:'Space Mono',monospace;font-size:10px;line-height:1.5" onchange="updP('htmlDescription',this.value)">${esc(p.htmlDescription)}</textarea>
+    <details style="margin-top:8px"><summary style="font-size:10px;color:#555;cursor:pointer">Preview</summary><div style="margin-top:6px;padding:12px;background:rgba(255,255,255,.015);border-radius:10px;font-size:12px;line-height:1.5">${p.htmlDescription}</div></details></div>
+    <div class="g2"><div class="cd"><label class="lb">Brand</label><input value="${esc(p.brand)}" onchange="updP('brand',this.value)"></div><div class="cd"><label class="lb">Type</label><input value="${esc(p.type)}" onchange="updP('type',this.value)"></div></div>
+    <div class="cd"><label class="lb">Shopify Category</label><input value="${esc(p.shopifyCategory)}" onchange="updP('shopifyCategory',this.value)"></div>
+  </div>
+  <div>
+    <div class="cd"><label class="lb">SEO Title</label><input value="${esc(p.seoTitle)}" onchange="updP('seoTitle',this.value)"><span class="mono" style="font-size:9px;color:#444">${(p.seoTitle||'').length}/60</span></div>
+    <div class="cd"><label class="lb">SEO Description</label><textarea style="height:55px;resize:none" onchange="updP('seoDescription',this.value)">${esc(p.seoDescription)}</textarea><span class="mono" style="font-size:9px;color:#444">${(p.seoDescription||'').length}/155</span></div>
+    <div class="cd"><label class="lb">Tags</label><input value="${esc((p.tags||[]).join(', '))}" onchange="updP('tags',this.value.split(',').map(s=>s.trim()).filter(Boolean))"><div class="fw" style="margin-top:4px">${(p.tags||[]).map(t=>'<span class="tg">'+t+'</span>').join('')}</div></div>
+    <div class="cd" style="background:rgba(184,150,90,.025);border-color:rgba(184,150,90,.1)">
+      <label class="lb" style="color:#b8965a">Pricing</label>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:10px">
+        <div><span style="color:#666;display:block">Cost USD</span><span class="mono" style="font-size:14px;font-weight:700">$${v.costUSD||0}</span></div>
+        <div><span style="color:#666;display:block">Ship USD</span><span class="mono" style="font-size:14px;font-weight:700">$${v.shipUSD||0}</span></div>
+        <div><span style="color:#666;display:block">Cost CAD</span><span class="mono" style="font-size:14px;font-weight:700">$${v.costCAD||0}</span></div>
+        <div><span style="color:#666;display:block">Sell CAD</span><input type="number" value="${v.sellCAD||0}" class="sell-in" style="width:90px;padding:6px" onchange="updV('sellCAD',+this.value)"></div>
+      </div>
+      <div style="margin-top:6px;font-size:9px;color:#555">SKU: ${v.sku||''} · Weight: ${v.weightKg||0}kg</div>
+    </div>
+    <div class="cd">
+      <label class="lb">Product Images</label>
+      <div class="dropzone" style="padding:16px" onclick="document.getElementById('pimg'+${D.activeTab}).click()">
+        <input type="file" id="pimg${D.activeTab}" multiple accept="image/*" style="display:none" onchange="addProductImages(${D.activeTab},this.files)">
+        <p style="font-size:11px">+ Add images for this product</p>
+      </div>
+      ${(p.originalImages||[]).length?'<div class="fw" style="margin-top:8px">'+p.originalImages.map((img,i)=>'<div style="width:60px;height:60px;border-radius:8px;overflow:hidden"><img src="data:image/png;base64,'+img+'" style="width:100%;height:100%;object-fit:cover"></div>').join('')+'</div>':''}
+    </div>
+  </div></div>`;
+}
 
-    // Placeholder
-    const ph=document.createElement('div');ph.id='ph'+i;ph.className='icard';
-    ph.style.cssText='background:rgba(255,255,255,.02);border:1px dashed rgba(184,150,90,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px';
-    ph.innerHTML='<div class="mspin"></div><span style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.08em">'+sc.t+'</span>';
-    $('pgrid').appendChild(ph);
+function esc(s){return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function updP(k,v){D.products[D.activeTab][k]=v;if(k==='title')renderTabs()}
+function updV(k,v){if(D.products[D.activeTab].variant)D.products[D.activeTab].variant[k]=v}
 
-    try{
-      const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:D.b64s,title:D.title,scene:sc.t,isStudio:!!sc.s,dimensions:dims,creative:D.creative})});
-      if(!r.ok){const e=await r.json();ph.innerHTML='<span style="font-size:9px;color:#ef4444">'+(e.error||'Failed')+'</span>';continue}
-      const d=await r.json();
-      const id=crypto.randomUUID();
-      const url='data:image/png;base64,'+d.image;
-      D.aiImgs.push({id,scene:sc.t,url,b64:d.image});D.selIds.add(id);
+function setName(idx,name){
+  const p=D.products[idx];
+  const ci=CATS[p.catKey]||CATS['tv-cabinet'];
+  const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const oldTitle=p.title;
+  const newTitle='The '+name+' '+typeCap;
+  p.title=newTitle;
+  if(oldTitle){p.htmlDescription=(p.htmlDescription||'').replaceAll(oldTitle,newTitle);p.seoTitle=(p.seoTitle||'').replaceAll(oldTitle,newTitle);p.seoDescription=(p.seoDescription||'').replaceAll(oldTitle,newTitle)}
+  renderTabs();renderEditor();
+}
 
-      ph.className='icard sel fi';ph.style.cssText='';ph.onclick=()=>togImg(id);
-      ph.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover"><div class="iov"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">'+sc.t+'</span><div id="ck'+id+'" style="width:18px;height:18px;border-radius:50%;background:#b8965a;display:flex;align-items:center;justify-content:center;font-size:10px;color:#09090b;font-weight:700">✓</div></div></div>';
-    }catch(e){ph.innerHTML='<span style="font-size:9px;color:#ef4444">Error</span>'}
-    updExp();
+async function addProductImages(idx,files){
+  const p=D.products[idx]; if(!p.originalImages)p.originalImages=[];
+  for(const f of Array.from(files)){const b=await f2b(f);p.originalImages.push(b.split(',')[1])}
+  renderEditor();
+}
+
+// ═══ GENERATE COPY ═══
+async function genCopy(idx){
+  const p=D.products[idx];hideErr();showL('Generating copy for '+p.supplierName+'...',30);
+  try{
+    const r=await fetch('/api/generate-copy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product:p.raw||p,images:p.originalImages||[],brand:D.brand||'Altera Home Design',fxRate:D.fxRate,markup:D.markup})});
+    if(!r.ok){const e=await r.json();throw new Error(e.error)}
+    const d=await r.json();
+    Object.assign(p,{title:d.title,catKey:d.catKey,collection:d.collection,type:d.type,shopifyCategory:d.shopifyCategory,googleShoppingCat:d.googleShoppingCat,creativeNames:d.creativeNames,htmlDescription:d.htmlDescription,seoTitle:d.seoTitle,seoDescription:d.seoDescription,tags:d.tags,hasVariants:d.hasVariants,variant:d.variant,brand:d.brand,metafields:d.metafields,generated:true});
+    hideL();renderTabs();renderEditor();toast('Generated: '+d.title);
+  }catch(e){hideL();showErr(e.message)}
+}
+
+async function genAllCopy(){
+  const ungen=D.products.filter(p=>!p.generated);
+  if(!ungen.length){toast('All products already generated');return}
+  for(let i=0;i<D.products.length;i++){
+    if(D.products[i].generated)continue;
+    D.activeTab=i;renderTabs();
+    showL('Generating '+(i+1)+'/'+D.products.length+': '+D.products[i].supplierName+'...',Math.round(i/D.products.length*100));
+    try{await genCopy(i)}catch{}
+    await new Promise(r=>setTimeout(r,500));
   }
-
-  $('ps').textContent='✓ '+D.aiImgs.length+' renders';$('ps').style.color='#22c55e';
-  if(D.aiImgs.length)$('btn-sel').style.display='';
-  updExp();
+  hideL();toast('All '+D.products.length+' products generated!');
 }
-
-function togImg(id){if(D.selIds.has(id)){D.selIds.delete(id);const c=$('ck'+id);c?.closest('.icard')?.classList.remove('sel');if(c)c.style.display='none'}else{D.selIds.add(id);const c=$('ck'+id);c?.closest('.icard')?.classList.add('sel');if(c)c.style.display=''}updExp()}
-function toggleSelAll(){if(D.selIds.size===D.aiImgs.length){D.selIds=new Set();D.aiImgs.forEach(x=>{const c=$('ck'+x.id);c?.closest('.icard')?.classList.remove('sel');if(c)c.style.display='none'})}else{D.aiImgs.forEach(x=>{D.selIds.add(x.id);const c=$('ck'+x.id);c?.closest('.icard')?.classList.add('sel');if(c)c.style.display=''})}updExp()}
 
 // ═══ EXPORTS ═══
-function getForm(){return{desc:$('f-desc').value,brand:$('f-brand').value,type:$('f-type').value,shopCat:$('f-scat').value,seoT:$('f-seot').value,seoD:$('f-seod').value,tags:$('f-tags').value}}
-
-function dlCSV(){
-  const f=getForm(),h=D.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
-  const H=['Handle','Title','Body (HTML)','Vendor','Product Category','Type','Tags','Published','Option1 Name','Option1 Value','Variant SKU','Variant Grams','Variant Inventory Policy','Variant Fulfillment Service','Variant Price','Variant Requires Shipping','Variant Taxable','SEO Title','SEO Description','Cost CAD (product.metafields.custom.cost_cad)','Cost USD (product.metafields.custom.cost_usd)','Brand (product.metafields.custom.brand)','Dimensions (product.metafields.custom.dimensions)','Status'];
-  const esc=v=>{const s=String(v??'');return/[,"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
-  const rows=D.vars.map((v,i)=>{const r=Array(H.length).fill('');r[0]=h;if(!i){r[1]=D.title;r[2]=f.desc;r[3]=f.brand;r[4]=f.shopCat;r[5]=f.type;r[6]=f.tags;r[17]=f.seoT;r[18]=f.seoD;r[21]=f.brand}r[7]='false';r[8]='Size';r[9]=v.sizeName;r[10]=v.sku;r[11]=String((v.weightKg||0)*1000);r[12]='continue';r[13]='manual';r[14]=(v.sellCAD||0).toFixed(2);r[15]='true';r[16]='true';r[19]=String(v.costCAD||'');r[20]=String(v.costUSD||'');r[22]=v.dimsF||'';r[23]='draft';return r.map(esc).join(',')});
-  const b=new Blob([H.join(',')+'\n'+rows.join('\n')],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=h+'_shopify.csv';a.click();URL.revokeObjectURL(a.href);toast('CSV exported!');
+function getExportProducts(){
+  return D.products.filter(p=>p.generated).map(p=>({
+    title:p.title,htmlDescription:p.htmlDescription,brand:p.brand,type:p.type,
+    shopifyCategory:p.shopifyCategory,googleShoppingCat:p.googleShoppingCat,
+    seoTitle:p.seoTitle,seoDescription:p.seoDescription,tags:p.tags,
+    hasVariants:p.hasVariants,variant:p.variant,variants:p.variants,
+    metafields:p.metafields,aiImages:(p.aiImages||[]).map(x=>({scene:x.scene,b64:x.b64})),
+    originalImages:p.originalImages||[]
+  }));
 }
 
-async function dlZip(){
-  toast('Building ZIP...');
-  const sel=D.aiImgs.filter(x=>D.selIds.has(x.id));
-  const r=await fetch('/api/export-zip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:D.title,variants:D.vars,formData:getForm(),aiImages:sel.map(x=>({scene:x.scene,b64:x.b64})),originalImages:D.b64s})});
-  if(!r.ok){showErr('ZIP export failed');return}
-  const b=await r.blob();
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=D.title.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'_package.zip';a.click();URL.revokeObjectURL(a.href);toast('ZIP exported!');
+async function dlBulkCSV(){
+  const prods=getExportProducts();
+  if(!prods.length){toast('Generate copy first');return}
+  toast('Building CSV for '+prods.length+' products...');
+  const r=await fetch('/api/export-bulk-csv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
+  if(!r.ok){showErr('CSV failed');return}
+  const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_import.csv';a.click();URL.revokeObjectURL(a.href);toast('CSV exported!');
 }
 
-function dlImages(){
-  D.aiImgs.filter(x=>D.selIds.has(x.id)).forEach(x=>{
-    const b=atob(x.b64),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
-    const bl=new Blob([a],{type:'image/png'});
-    const el=document.createElement('a');el.href=URL.createObjectURL(bl);el.download=D.title.replace(/[^a-z0-9]/gi,'_')+'_'+x.scene.replace(/[^a-z0-9]/gi,'_')+'.png';el.click();URL.revokeObjectURL(el.href);
-  });toast(D.selIds.size+' images downloaded');
+async function dlBulkZip(){
+  const prods=getExportProducts();
+  if(!prods.length){toast('Generate copy first');return}
+  toast('Building ZIP for '+prods.length+' products...');
+  const r=await fetch('/api/export-bulk-zip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
+  if(!r.ok){showErr('ZIP failed');return}
+  const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_package.zip';a.click();URL.revokeObjectURL(a.href);toast('ZIP exported!');
 }
-
-function startNew(){D.imgs=[];D.b64s=[];D.aiImgs=[];D.selIds=new Set();D.vars=[];$('thumbs').innerHTML='';$('pgrid').innerHTML='';$('step0').style.display='';$('step2').style.display='none';$('btn-new').style.display='none';$('btn-go').disabled=true;hideErr()}
-</script>
-</body>
-</html>
+</script></body></html>
