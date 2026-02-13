@@ -314,7 +314,14 @@ app.post('/api/photoshoot-scene', async(req,res)=>{
   try{
     const{images,title,scene,scenePrompt,isStudio,dimensions,creative,catKey}=req.body;
     if(!GEMINI_KEY)return res.status(500).json({error:'GEMINI_API_KEY not configured'});
-    const iParts=images.map(im=>({inlineData:{data:im,mimeType:'image/png'}}));
+    const iParts=images.map(im=>{
+      // Detect MIME from base64 header
+      let mime='image/png';
+      if(im.startsWith('/9j/')||im.startsWith('/9j'))mime='image/jpeg';
+      else if(im.startsWith('R0lGOD'))mime='image/gif';
+      else if(im.startsWith('iVBOR'))mime='image/png';
+      return {inlineData:{data:im,mimeType:mime}};
+    });
     const dims=dimensions||'standard';
     const catLabel = CATS[catKey]?.type || 'furniture piece';
 
@@ -329,8 +336,17 @@ app.post('/api/photoshoot-scene', async(req,res)=>{
       try{
         const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[...iParts,{text:prompt+' '+(creative||'')}]}],generationConfig:{responseModalities:['IMAGE','TEXT'],aspectRatio:'1:1'}})});
         if(!r.ok){console.error('Gemini '+r.status);if(r.status===403||r.status===401)return res.status(r.status).json({error:'Gemini unauthorized'});if(a<2){await sleep(3000*(a+1));continue}return res.status(502).json({error:'Gemini error'})}
-        const d=await r.json();const ip=d.candidates?.[0]?.content?.parts?.find(p=>p.inlineData);
-        if(ip?.inlineData)return res.json({image:ip.inlineData.data,mimeType:ip.inlineData.mimeType||'image/png'});
+        const d=await r.json();
+        console.log('Gemini response parts:', d.candidates?.[0]?.content?.parts?.map(p=>({type:p.text?'text':'image',hasData:!!p.inlineData})));
+        const ip=d.candidates?.[0]?.content?.parts?.find(p=>p.inlineData);
+        if(ip?.inlineData){
+          console.log('Gemini image OK, size:', ip.inlineData.data?.length);
+          return res.json({image:ip.inlineData.data,mimeType:ip.inlineData.mimeType||'image/png'});
+        }
+        // Check if there's a text-only response (Gemini refused to generate image)
+        const textPart=d.candidates?.[0]?.content?.parts?.find(p=>p.text);
+        if(textPart)console.log('Gemini text only:',textPart.text?.substring(0,200));
+        if(!d.candidates?.length)console.log('Gemini no candidates:', JSON.stringify(d).substring(0,300));
         if(a<2)await sleep(2000);
       }catch(e){if(a<2)await sleep(3000*(a+1))}
     }
@@ -409,5 +425,15 @@ app.post('/api/export-bulk-zip', async(req,res)=>{
 });
 
 app.get('/api/health',(req,res)=>res.json({ok:true,claude:!!CLAUDE_KEY,gemini:!!GEMINI_KEY}));
+
+// Debug: test Gemini with a simple prompt
+app.get('/api/debug-gemini', async(req,res)=>{
+  try{
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Generate a simple photo of a brown wooden chair on a white background'}]}],generationConfig:{responseModalities:['IMAGE','TEXT'],aspectRatio:'1:1'}})});
+    const d=await r.json();
+    const parts=(d.candidates?.[0]?.content?.parts||[]).map(p=>({type:p.text?'text':'image',textPreview:p.text?.substring(0,100),hasImage:!!p.inlineData,imageSize:p.inlineData?.data?.length}));
+    res.json({status:r.status,parts,raw:!d.candidates?JSON.stringify(d).substring(0,500):undefined});
+  }catch(e){res.json({error:e.message})}
+});
 const PORT=process.env.PORT||3000;
 app.listen(PORT,()=>console.log('Altera Product Studio on port '+PORT));

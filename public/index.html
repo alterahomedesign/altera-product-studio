@@ -266,8 +266,9 @@ async function runPhotoshoot(idx){
       if(D.activeTab===idx)renderEditor();
       try{
         const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:p.originalImages.slice(0,2),title:p.title||p.supplierName,scene:sc.t,scenePrompt:sc.p||'',isStudio:!!sc.s,dimensions:p.dimensions||'',creative:'',catKey:p.catKey||'sofa'})});
-        if(!r.ok){const t=await r.text();console.error('Scene failed:',sc.t,t.substring(0,100));continue}
+        if(!r.ok){const t=await r.text();console.error('Scene failed:',sc.t,r.status,t.substring(0,200));continue}
         const d=await r.json();
+        console.log('Scene result:',sc.t,'hasImage:',!!d.image,'imageLen:',d.image?.length,'keys:',Object.keys(d));
         if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});if(D.activeTab===idx)renderEditor()}
       }catch(e){console.error('Scene error:',sc.t,e)}
     }
