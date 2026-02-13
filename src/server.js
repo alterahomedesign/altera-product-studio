@@ -327,14 +327,14 @@ app.post('/api/photoshoot-scene', async(req,res)=>{
 
     let prompt;
     if(isStudio){
-      prompt = 'Professional product photography of this '+catLabel+' called "'+title+'". '+scenePrompt+' Dimensions: '+dims+'. Pure white #FFFFFF studio background. Commercial e-commerce photo. No room context.';
+      prompt = 'Professional product photography of this '+catLabel+' called "'+title+'". '+scenePrompt+' Dimensions: '+dims+'. Pure white #FFFFFF studio background. Commercial e-commerce photo. No room context. Output a SQUARE 1:1 aspect ratio image.';
     } else {
-      prompt = 'Create a photorealistic interior design photograph showing this '+catLabel+' called "'+title+'" in context. '+scenePrompt+' The '+catLabel+' dimensions are '+dims+'. Realistic interior photography with natural lighting. The furniture must be the hero/focal point of the image. Maintain exact proportions and design of the original product.';
+      prompt = 'Create a photorealistic interior design photograph showing this '+catLabel+' called "'+title+'" in context. '+scenePrompt+' The '+catLabel+' dimensions are '+dims+'. Realistic interior photography with natural lighting. The furniture must be the hero/focal point of the image. Maintain exact proportions and design of the original product. Output a SQUARE 1:1 aspect ratio image.';
     }
 
     for(let a=0;a<3;a++){
       try{
-        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[...iParts,{text:prompt+' '+(creative||'')}]}],generationConfig:{responseModalities:['IMAGE','TEXT'],aspectRatio:'1:1'}})});
+        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[...iParts,{text:prompt+' '+(creative||'')}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}})});
         if(!r.ok){console.error('Gemini '+r.status);if(r.status===403||r.status===401)return res.status(r.status).json({error:'Gemini unauthorized'});if(a<2){await sleep(3000*(a+1));continue}return res.status(502).json({error:'Gemini error'})}
         const d=await r.json();
         console.log('Gemini response parts:', d.candidates?.[0]?.content?.parts?.map(p=>({type:p.text?'text':'image',hasData:!!p.inlineData})));
@@ -429,7 +429,7 @@ app.get('/api/health',(req,res)=>res.json({ok:true,claude:!!CLAUDE_KEY,gemini:!!
 // Debug: test Gemini with a simple prompt
 app.get('/api/debug-gemini', async(req,res)=>{
   try{
-    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Generate a simple photo of a brown wooden chair on a white background'}]}],generationConfig:{responseModalities:['IMAGE','TEXT'],aspectRatio:'1:1'}})});
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Generate a simple photo of a brown wooden chair on a white background. Square 1:1 image.'}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}})});
     const d=await r.json();
     const parts=(d.candidates?.[0]?.content?.parts||[]).map(p=>({type:p.text?'text':'image',textPreview:p.text?.substring(0,100),hasImage:!!p.inlineData,imageSize:p.inlineData?.data?.length}));
     res.json({status:r.status,parts,raw:!d.candidates?JSON.stringify(d).substring(0,500):undefined});
