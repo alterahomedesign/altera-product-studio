@@ -94,7 +94,11 @@ main{max-width:1400px;margin:0 auto;padding:24px 24px 60px}
 <script>
 const $=id=>document.getElementById(id);
 const D={products:[],activeTab:0,imgs:[],b64s:[],fxRate:1.44,markup:3,brand:'',settings:{}};
-const SCENES=[{t:'Studio Front',s:1},{t:'Three-Quarter View',s:1},{t:'Japandi'},{t:'Coastal Living'},{t:'Scandinavian Modern'},{t:'Editorial Loft'},{t:'Luxury Lounge'},{t:'Industrial Chic'},{t:'Close-up Detail'},{t:'Close-up Texture'}];
+const SCENES_CACHE={};
+async function getScenesForCat(catKey){
+  if(SCENES_CACHE[catKey])return SCENES_CACHE[catKey];
+  try{const r=await fetch('/api/scenes/'+catKey);const d=await r.json();SCENES_CACHE[catKey]=d.scenes;return d.scenes}catch{return[{t:'Studio Front',s:1,p:'White background'},{t:'Modern Interior',p:'Modern interior'}]}
+}
 function toast(m){$('toast-msg').textContent=m;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function showErr(m){$('err-msg').textContent=m;$('errbar').classList.add('show')}
 function hideErr(){$('errbar').classList.remove('show')}
@@ -111,7 +115,8 @@ function toggleSettings(){/* TODO */}
 
 // ═══ FILE HANDLING ═══
 const f2b=f=>new Promise(r=>{const x=new FileReader();x.onloadend=()=>r(x.result);x.readAsDataURL(f)});
-async function handleImages(files){for(const f of Array.from(files)){const b=await f2b(f);D.imgs.push(b);D.b64s.push(b.split(',')[1])}renderThumbs();$('btn-go').disabled=!D.imgs.length}
+const compressImg=(dataUrl,maxKB=4000)=>new Promise(r=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');let w=img.width,h=img.height;const max=2048;if(w>max||h>max){const s=Math.min(max/w,max/h);w=Math.round(w*s);h=Math.round(h*s)}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=0.85;const try_=()=>{const out=c.toDataURL('image/jpeg',q);if(out.length*0.75>maxKB*1024&&q>0.3){q-=0.1;try_()}else r(out)};try_()};img.src=dataUrl});
+async function handleImages(files){for(const f of Array.from(files)){let b=await f2b(f);if(b.length>5*1024*1024){b=await compressImg(b)}D.imgs.push(b);D.b64s.push(b.split(',')[1])}renderThumbs();$('btn-go').disabled=!D.imgs.length}
 function renderThumbs(){$('thumbs').innerHTML='';D.imgs.forEach((img,i)=>{const d=document.createElement('div');d.style.cssText='width:72px;height:72px;border-radius:12px;overflow:hidden;position:relative;border:2px solid rgba(255,255,255,.05)';d.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover"><button onclick="D.imgs.splice('+i+',1);D.b64s.splice('+i+',1);renderThumbs();$(\'btn-go\').disabled=!D.imgs.length" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(220,50,50,.85);border:none;color:#fff;font-size:10px;cursor:pointer">×</button>';$('thumbs').appendChild(d)})}
 
 // ═══ CATALOG PARSE ═══
@@ -213,7 +218,9 @@ function renderProductForm(p){
         <p style="font-size:11px">+ Add images for this product</p>
       </div>
       ${(p.originalImages||[]).length?'<div class="fw" style="margin-top:8px">'+p.originalImages.map((img,i)=>'<div style="width:60px;height:60px;border-radius:8px;overflow:hidden"><img src="data:image/png;base64,'+img+'" style="width:100%;height:100%;object-fit:cover"></div>').join('')+'</div>':''}
+      ${(p.originalImages||[]).length?'<button class="bp" style="margin-top:10px;width:100%;padding:10px" onclick="runPhotoshoot('+D.activeTab+')">📸 AI Photoshoot (10 scenes)</button>':''}
     </div>
+    ${(p.aiImages||[]).length?'<div class="cd"><label class="lb">AI Photoshoot ('+p.aiImages.length+'/10)</label><div class="igrid">'+p.aiImages.map(img=>'<div class="icard sel"><img src="data:image/png;base64,'+img.b64+'" style="width:100%;height:100%;object-fit:cover"><div class="iov"><span style="font-size:9px;font-weight:600">'+esc(img.scene)+'</span></div></div>').join('')+'</div></div>':''}
   </div></div>`;
 }
 
@@ -234,8 +241,25 @@ function setName(idx,name){
 
 async function addProductImages(idx,files){
   const p=D.products[idx]; if(!p.originalImages)p.originalImages=[];
-  for(const f of Array.from(files)){const b=await f2b(f);p.originalImages.push(b.split(',')[1])}
+  for(const f of Array.from(files)){let b=await f2b(f);if(b.length>5*1024*1024){b=await compressImg(b)}p.originalImages.push(b.split(',')[1])}
   renderEditor();
+}
+
+async function runPhotoshoot(idx){
+  const p=D.products[idx]; if(!p.originalImages?.length){toast('Add images first');return}
+  const scenes=await getScenesForCat(p.catKey||'sofa');
+  if(!p.aiImages)p.aiImages=[];
+  toast('Starting photoshoot: '+scenes.length+' scenes for '+p.title);
+  for(let i=0;i<scenes.length;i++){
+    const sc=scenes[i];
+    try{
+      const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:p.originalImages,title:p.title,scene:sc.t,scenePrompt:sc.p||'',isStudio:!!sc.s,dimensions:p.dimensions||'',creative:'',catKey:p.catKey||'sofa'})});
+      if(!r.ok){console.error('Scene failed:',sc.t);continue}
+      const d=await r.json();
+      if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});D.activeTab=idx;renderEditor();toast('Scene '+(i+1)+'/'+scenes.length+': '+sc.t)}
+    }catch(e){console.error('Scene error:',e)}
+  }
+  toast('Photoshoot complete: '+p.aiImages.length+' images');
 }
 
 // ═══ GENERATE COPY ═══

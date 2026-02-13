@@ -97,17 +97,144 @@ app.post('/api/extract', async(req,res)=>{
   }catch(e){console.error('Extract:',e);res.status(500).json({error:e.message})}
 });
 
+// ═══ CATEGORY-AWARE SCENES ═══
+const CAT_SCENES = {
+  'sofa': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background, centered, no props'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background, showing depth and cushion detail'},
+    {t:'Modern Living Room',p:'In a spacious modern living room with a coffee table in front, area rug beneath, natural light from large windows, indoor plants'},
+    {t:'Scandinavian Living Room',p:'In a bright Scandinavian living room with light oak floors, white walls, wool throw draped on arm, minimalist side table'},
+    {t:'Japandi Living Room',p:'In a serene Japandi interior with natural wood accents, paper lanterns, low coffee table, neutral tones'},
+    {t:'Coastal Living Room',p:'In an airy coastal living room with ocean view through windows, light linen curtains, driftwood accents, seagrass rug'},
+    {t:'Luxury Living Room',p:'In a high-end living room with marble floor, gold accents, oversized abstract art on wall, designer lighting'},
+    {t:'Loft Living Space',p:'In an industrial loft with exposed brick walls, concrete floor, large windows, vintage rug, statement lighting'},
+    {t:'Close-up Detail',p:'Close-up macro shot of stitching, cushion texture, and armrest detail'},
+    {t:'Close-up Fabric',p:'Extreme close-up of upholstery material texture and color'}
+  ],
+  'bed': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background, showing headboard and frame'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background'},
+    {t:'Master Bedroom',p:'In a spacious master bedroom with nightstands on each side, table lamps, neutral bedding, soft morning light through curtains'},
+    {t:'Scandinavian Bedroom',p:'In a bright Scandinavian bedroom with light wood floors, white bedding, pendant lights on each side, indoor plant on nightstand'},
+    {t:'Japandi Bedroom',p:'In a serene Japandi bedroom with tatami elements, shoji screens, low nightstands, warm ambient lighting'},
+    {t:'Luxury Bedroom',p:'In an upscale bedroom suite with velvet throw, designer nightstands, chandelier, floor-to-ceiling curtains'},
+    {t:'Cozy Bedroom',p:'In a cozy bedroom with textured throw blankets, reading lamps, stacked books on nightstand, warm evening light'},
+    {t:'Minimalist Bedroom',p:'In a minimalist bedroom with clean lines, single pendant light, white walls, one art piece above headboard'},
+    {t:'Close-up Headboard',p:'Close-up detail of headboard upholstery, texture and craftsmanship'},
+    {t:'Close-up Frame',p:'Close-up of bed frame joint, wood grain or metal finish detail'}
+  ],
+  'tv-cabinet': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background, doors closed'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background showing depth'},
+    {t:'Modern Living Room',p:'Against the main wall of a modern living room with a large TV mounted above, sofa facing it, ambient LED backlighting'},
+    {t:'Scandinavian Living Room',p:'Against a white wall in a Scandinavian living room with a flat screen TV, minimalist decor, light wood floors, cozy sofa visible'},
+    {t:'Japandi Living Room',p:'In a Japandi living room against textured wall, TV above, low sofa, warm wood tones throughout'},
+    {t:'Entertainment Room',p:'In a dedicated entertainment room with large screen above, sound bar on top, ambient lighting, comfortable seating'},
+    {t:'Contemporary Apartment',p:'In a contemporary apartment living area with city view, modern art, designer lighting, sofa and coffee table visible'},
+    {t:'Industrial Loft',p:'Against an exposed brick wall in a loft, TV mounted above, leather sofa opposite, vintage industrial lighting'},
+    {t:'Close-up Detail',p:'Close-up of door handle, wood grain, and surface finish detail'},
+    {t:'Close-up Storage',p:'Doors open showing interior storage compartments and shelf detail'}
+  ],
+  'nightstand': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background'},
+    {t:'Next to Bed',p:'Positioned next to a bed in a bedroom, with a table lamp on top, a book, and small plant, warm bedside lighting'},
+    {t:'Master Bedroom Pair',p:'One of a matching pair flanking a king bed, with matching lamps, alarm clock, morning light through curtains'},
+    {t:'Scandinavian Bedroom',p:'Next to a bed in a Scandinavian bedroom, single pendant light above, white bedding, minimalist styling'},
+    {t:'Cozy Bedroom',p:'Next to a bed with reading lamp on top, stack of books, glasses, warm evening ambiance'},
+    {t:'Luxury Bedroom',p:'Next to a luxury upholstered bed, designer lamp, fresh flowers in vase, velvet throw visible'},
+    {t:'Guest Bedroom',p:'In a welcoming guest bedroom next to a neatly made bed, with a small lamp and water carafe on top'},
+    {t:'Close-up Detail',p:'Close-up of drawer pull, wood grain, and surface finish'},
+    {t:'Close-up Open',p:'Drawer partially open showing interior and smooth drawer mechanism'}
+  ],
+  'dining-table': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background showing surface'},
+    {t:'Dining Room Set',p:'In a dining room with matching chairs around it, table set with plates and glasses, pendant light above, natural light'},
+    {t:'Scandinavian Dining',p:'In a bright Scandinavian dining area with pendant lamp, simple place settings, light wood floors, window light'},
+    {t:'Japandi Dining',p:'In a Japandi dining space with ceramic tableware, wooden chairs, paper pendant lights, serene atmosphere'},
+    {t:'Open Kitchen Dining',p:'In an open-plan kitchen-dining area, kitchen island visible behind, table set for dinner, warm lighting'},
+    {t:'Luxury Dining Room',p:'In an elegant dining room with upholstered chairs, chandelier above, fine china place settings, fresh flowers centerpiece'},
+    {t:'Dinner Party',p:'Set for a dinner party with candles, wine glasses, linen napkins, warm ambient evening lighting'},
+    {t:'Close-up Surface',p:'Close-up macro of table surface showing wood grain, finish quality'},
+    {t:'Close-up Edge',p:'Close-up of table edge profile, leg joint, and craftsmanship detail'}
+  ],
+  'sideboard': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background'},
+    {t:'Dining Room',p:'Against the wall of a dining room, with dining table visible, decorative objects and a vase with flowers on top, framed art above'},
+    {t:'Living Room',p:'In a living room against a feature wall, with curated decor on top — books, ceramic vase, small sculpture, mirror above'},
+    {t:'Hallway Entry',p:'In an elegant hallway or entryway, with a mirror above, key tray and decorative bowl on top, warm welcoming light'},
+    {t:'Scandinavian Interior',p:'Against a white wall in a Scandinavian interior, minimal styling on top, light wood floors, natural light'},
+    {t:'Luxury Interior',p:'In an upscale interior with marble floors, designer objects displayed on top, statement artwork above'},
+    {t:'Contemporary Home',p:'In a contemporary home with open floor plan, styled with modern decor, plants, and design books on top'},
+    {t:'Close-up Detail',p:'Close-up of handle hardware, door mechanism, and surface finish'},
+    {t:'Close-up Open',p:'Doors open showing interior shelving and storage organization'}
+  ],
+  'wardrobe': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background, doors closed'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background'},
+    {t:'Master Bedroom',p:'In a spacious master bedroom against the main wall, bed visible, coordinated with room decor, morning light'},
+    {t:'Dressing Room',p:'In a walk-in dressing area with full-length mirror nearby, organized accessories visible'},
+    {t:'Scandinavian Bedroom',p:'In a Scandinavian bedroom with light tones, minimal furniture, natural light'},
+    {t:'Modern Bedroom',p:'In a modern bedroom with clean lines, matching furniture set, designer lighting'},
+    {t:'Doors Open',p:'In a bedroom with doors open showing organized interior — shelves, hanging rail, drawers'},
+    {t:'Luxury Bedroom',p:'In a luxury bedroom suite with coordinating furniture, plush carpet, soft ambient lighting'},
+    {t:'Close-up Detail',p:'Close-up of door handle, hinge, and surface finish quality'},
+    {t:'Close-up Interior',p:'Close-up of interior organization — shelf edge, drawer detail, rail'}
+  ]
+};
+// Default scenes for categories not explicitly defined
+const DEFAULT_SCENES = [
+  {t:'Studio Front',s:1,p:'Front view on pure white background, centered, no props'},
+  {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background showing depth'},
+  {t:'Modern Interior',p:'In a tastefully decorated modern interior appropriate for this type of furniture, natural light'},
+  {t:'Scandinavian Interior',p:'In a bright Scandinavian interior with light wood floors, white walls, minimalist decor'},
+  {t:'Japandi Interior',p:'In a serene Japandi interior with natural wood accents, neutral tones, paper lanterns'},
+  {t:'Coastal Interior',p:'In an airy coastal interior with light colors, natural textures, ocean-inspired palette'},
+  {t:'Luxury Interior',p:'In an upscale luxury interior with premium finishes, designer accents, soft lighting'},
+  {t:'Contemporary Space',p:'In a contemporary open-plan space with modern art, designer furniture, city views'},
+  {t:'Close-up Detail',p:'Close-up macro shot of material texture, joints, and craftsmanship'},
+  {t:'Close-up Texture',p:'Extreme close-up of primary material surface texture and color'}
+];
+// Map category aliases
+const sceneFor = ck => {
+  if(CAT_SCENES[ck]) return CAT_SCENES[ck];
+  if(ck.includes('chair')||ck==='bar-stool') return CAT_SCENES['dining-table']; // chairs go in dining rooms
+  if(ck.includes('lamp')||ck.includes('light')) return DEFAULT_SCENES;
+  if(ck==='coffee-table'||ck==='side-table') return CAT_SCENES['sofa']; // coffee tables go with sofas
+  if(ck==='shoe-cabinet') return CAT_SCENES['sideboard'];
+  if(ck==='office-desk') return DEFAULT_SCENES;
+  if(ck==='mattress') return CAT_SCENES['bed'];
+  if(ck==='buffet') return CAT_SCENES['sideboard'];
+  if(ck.includes('set')) return CAT_SCENES['dining-table'];
+  if(ck==='rug') return CAT_SCENES['sofa'];
+  return DEFAULT_SCENES;
+};
+
+app.get('/api/scenes/:catKey', (req,res) => {
+  res.json({scenes: sceneFor(req.params.catKey)});
+});
+
 // ═══ PHOTOSHOOT ═══
 app.post('/api/photoshoot-scene', async(req,res)=>{
   try{
-    const{images,title,scene,isStudio,dimensions,creative}=req.body;
+    const{images,title,scene,scenePrompt,isStudio,dimensions,creative,catKey}=req.body;
     if(!GEMINI_KEY)return res.status(500).json({error:'GEMINI_API_KEY not configured'});
     const iParts=images.map(im=>({inlineData:{data:im,mimeType:'image/png'}}));
     const dims=dimensions||'standard';
-    const rules=isStudio?'Pure white #FFFFFF bg. No props. High-key lighting. Dims: '+dims:'High-fidelity '+scene+' interior. Morning light. Dims: '+dims+'. Accurate scale.';
+    const catLabel = CATS[catKey]?.type || 'furniture piece';
+
+    let prompt;
+    if(isStudio){
+      prompt = 'Professional product photography of this '+catLabel+' called "'+title+'". '+scenePrompt+' Dimensions: '+dims+'. Pure white #FFFFFF studio background. Commercial e-commerce photo. No room context.';
+    } else {
+      prompt = 'Create a photorealistic interior design photograph showing this '+catLabel+' called "'+title+'" in context. '+scenePrompt+' The '+catLabel+' dimensions are '+dims+'. Realistic interior photography with natural lighting. The furniture must be the hero/focal point of the image. Maintain exact proportions and design of the original product.';
+    }
+
     for(let a=0;a<3;a++){
       try{
-        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[...iParts,{text:'Render '+title+'. SCENE: '+scene+'. '+rules+' PRESERVE geometry. '+(creative||'')}]}],generationConfig:{responseModalities:['IMAGE','TEXT'],aspectRatio:'1:1'}})});
+        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[...iParts,{text:prompt+' '+(creative||'')}]}],generationConfig:{responseModalities:['IMAGE','TEXT'],aspectRatio:'1:1'}})});
         if(!r.ok){console.error('Gemini '+r.status);if(r.status===403||r.status===401)return res.status(r.status).json({error:'Gemini unauthorized'});if(a<2){await sleep(3000*(a+1));continue}return res.status(502).json({error:'Gemini error'})}
         const d=await r.json();const ip=d.candidates?.[0]?.content?.parts?.find(p=>p.inlineData);
         if(ip?.inlineData)return res.json({image:ip.inlineData.data,mimeType:ip.inlineData.mimeType||'image/png'});
