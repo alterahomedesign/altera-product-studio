@@ -16,8 +16,9 @@ const CSV_H = ['Handle','Title','Body (HTML)','Vendor','Product Category','Type'
 const cmToIn=cm=>{const t=cm*.393701,w=Math.floor(t),r=t-w,e=Math.round(r*8);if(!e)return w+'"';if(e===8)return(w+1)+'"';let n=e,d=8;if(n%4===0){n/=4;d=2}else if(n%2===0){n/=2;d=4}return w+' '+n+'/'+d+'"'};
 const cmToInNum=cm=>+(cm*.393701).toFixed(1);
 const kgToLbs=kg=>+(kg*2.20462).toFixed(1);
-const parseDims=s=>{if(!s)return{l:0,w:0,h:0};const parts=s.replace(/cm/gi,'').split(/[x*×]/i).map(p=>parseFloat(p.trim())||0);return{l:parts[0]||0,w:parts[1]||0,h:parts[2]||0}};
-const fmtDims=s=>{if(!s)return'';const l=['length','width','height'];return s.replace(/cm/gi,'').split(/[x*×]/i).map((p,i)=>{const v=parseFloat(p.trim());if(isNaN(v))return'';return Math.round(v)+'cm ('+cmToIn(v)+') '+(l[i]||'')}).filter(Boolean).join(' x ').trim()};
+const parseDims=s=>{if(!s)return{l:0,w:0,h:0};const parts=s.replace(/[cm"]/gi,'').split(/[x*×]/i).map(p=>parseFloat(p.trim())||0);let l=parts[0]||0,w=parts[1]||0,h=parts[2]||0;if(l>300||w>300||h>300){l/=10;w/=10;h/=10}return{l,w,h}};
+const cmToFrac=cm=>{const t=cm*.393701,w=Math.floor(t),r=t-w,e=Math.round(r*8);if(!e)return w+'"';if(e===8)return(w+1)+'"';let n=e,d=8;if(n%4===0){n/=4;d=2}else if(n%2===0){n/=2;d=4}return w+' '+n+'/'+d+'"'};
+const fmtDims=s=>{if(!s)return'';const d=parseDims(s);const labels=['length','width','height'];const vals=[d.l,d.w,d.h];return vals.map((v,i)=>{if(!v)return'';return Math.round(v)+'cm ('+cmToFrac(v)+') '+labels[i]}).filter(Boolean).join(' x ').trim()};
 const estWeight=(k,cm)=>{const w=CATS[k]?.w||{b:25,p:.15};return w.b+(cm||0)*w.p};
 const genSKU=(m,s)=>{const x=v=>(v||'').replace(/[^a-z0-9]/gi,'').toUpperCase().slice(0,5);return x(m||'PROD')+'-'+x(String(s||'OS'))};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -352,13 +353,19 @@ app.post('/api/photoshoot-scene', async(req,res)=>{
     const catLabel = CATS[catKey]?.type || 'furniture piece';
 
     let prompt;
-    const designerThinking = 'STYLING AND COMPOSITION INTELLIGENCE: Act as a world class interior stylist. SCALE AND PROPORTION: You MUST use the provided dimensions to render the product at an accurate scale. Compare it to standard environmental objects like coffee tables, rugs, or ceiling heights to ensure it looks realistic. EXCLUSIVE LIGHTING PROFILE: Use only bright, high-key, vibrant, and airy lighting. Focus on soft morning sun, ethereal daylight, and fresh atmospheres. AVOID DARKNESS: Strictly zero moody, dark, or low-key lighting. No heavy shadows or dimly lit environments. VISUAL FOCUS: The product must be the hero. Use architectural contrast to define its silhouette against a bright, professional background.';
-    const noText = 'CRITICAL: Do NOT add any text, labels, watermarks, dimensions, product names, or overlays to the image. The image must contain ZERO text of any kind.';
+    // ═══ TEXTURE INTELLIGENCE DIRECTIVE ═══
+    const textureDirective = '[TEXTURE INTELLIGENCE DIRECTIVE] Render with hyper-realistic, high-resolution textures. Surfaces must show microscopic detail: visible wood grains (not generic patterns), individual thread weaves in linen or velvet fabrics, organic imperfections/pores in leather, and micro-brushed finishes on metals. Avoid all synthetic, smooth, or plasticky shaders. Use soft, directional natural daylight (85mm lens feel) to create realistic micro-shadows that define the material\'s tactile quality.';
+
+    // ═══ PRESERVATION MASTER PROMPT ═══
+    const preservation = 'CRITICAL: You are a professional photographer. You MUST preserve the exact design, proportions, silhouette, and materials of the furniture provided in the source images. DO NOT alter the legs, arms, or structural lines of the furniture. Your task is to place this identical piece into a new environment. Ensure the lighting on the furniture matches the lighting of the new scene perfectly. No text, arrows, annotations, labels, watermarks, dimensions, or product names in the output.';
+
+    // ═══ STYLING INTELLIGENCE ═══
+    const stylingIntel = 'STYLING AND COMPOSITION INTELLIGENCE: Act as a world-class interior stylist and professional photographer. SCALE AND PROPORTION: You MUST use the provided dimensions ('+dims+') to render the product at an accurate, realistic scale. Compare it to standard environmental objects (coffee tables, rugs, ceiling heights) to ensure correct sizing. EXCLUSIVE LIGHTING PROFILE: Use only bright, high-key, vibrant, and airy lighting. Focus on soft morning sun, ethereal daylight, and fresh atmospheres. AVOID DARKNESS: Strictly zero moody, dark, or low-key lighting. No heavy shadows or dimly lit environments. VISUAL FOCUS: The product must be the hero, centered with breathable space. Use architectural contrast to define its silhouette. Strictly 1:1 Square aspect ratio.';
 
     if(isStudio){
-      prompt = 'High fidelity 1:1 render of '+title+'. SCENE: '+scene+'. BACKGROUND: PERFECT PURE WHITE #FFFFFF. Strictly zero environmental props. Pure isolated product on 100 percent white background. High-key lighting. SLIGHT GROUNDING SHADING: Include subtle, realistic shadows where the product touches the floor for a high-end catalog look. SCALE: Product dimensions are '+dims+'. STRICT PRESERVATION: 100 percent identical furniture geometry and materials. '+designerThinking+' '+noText;
+      prompt = 'High fidelity 1:1 render of '+title+'. SCENE: '+scene+'. BACKGROUND: PERFECT PURE WHITE #FFFFFF. Strictly zero environmental props. Pure isolated product on 100 percent white background. High-key lighting. SLIGHT GROUNDING SHADING: Include subtle, realistic shadows where the product touches the floor for a high-end catalog look. SCALE: Product dimensions are '+dims+'. '+preservation+' '+textureDirective+' '+stylingIntel;
     } else {
-      prompt = 'High fidelity 1:1 render of '+title+'. SCENE: '+scene+'. '+scenePrompt+' ENVIRONMENT: High-fidelity interior for this aesthetic. VIBE: Always vibrant and airy. Use bright morning light. SCALE: Product dimensions are '+dims+'. Ensure it is sized correctly relative to the room and props. STRICT PRESERVATION: 100 percent identical furniture geometry and materials. Ensure a bright, professional look with perfectly accurate scale. '+designerThinking+' '+noText;
+      prompt = 'High fidelity 1:1 render of '+title+'. SCENE: '+scene+'. '+scenePrompt+' ENVIRONMENT: High-fidelity interior for this aesthetic. When generating this lifestyle scene, include complementary high-end furniture and decor that matches the material palette of the primary item to create a cohesive, professionally staged interior design look. VIBE: Always vibrant and airy. Use bright morning light. SCALE: Product dimensions are '+dims+'. Ensure it is sized correctly relative to the room and props. '+preservation+' '+textureDirective+' '+stylingIntel;
     }
 
     for(let a=0;a<3;a++){
