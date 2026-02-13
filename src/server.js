@@ -391,17 +391,12 @@ function fillProductRow(r,prod,v,isFirst){
     r['Product Category']=prod.shopifyCategory||'';r['Type']=prod.type||'';r['Tags']=(prod.tags||[]).join(', ');
     r['Gift Card']='false';r['SEO Title']=prod.seoTitle||'';r['SEO Description']=prod.seoDescription||'';
     r['Google Shopping / Google Product Category']=prod.googleShoppingCat||'';r['Google Shopping / Condition']='new';
-    r['Brand (product.metafields.custom.brand)']=prod.brand||'';
-    r['Cost CAD (product.metafields.custom.cost_cad)']="'"+String(v.costCAD||'');
-    r['Cost USD (product.metafields.custom.cost_usd)']="'"+String(v.costUSD||'');
-    r['Materials (product.metafields.custom.materials)']=mf.material||'';
-    r['Shipping (product.metafields.custom.shipping)']='1-2 weeks';
-    r['Shipping cost USD (product.metafields.custom.shipping_cost_usd)']="'"+String(v.shipUSD||'');
-    r['Color (product.metafields.shopify.color-pattern)']=aj(mf.colors);
-    r['Style (product.metafields.shopify.style)']=aj(mf.style);
-    r['Material (product.metafields.shopify.material)']=aj(mf.furnitureMaterial);
-    r['Furniture/Fixture material (product.metafields.shopify.furniture-fixture-material)']=aj(mf.furnitureMaterial);
-    r['Suitable space (product.metafields.shopify.suitable-space)']='indoors';
+    // Custom metafields
+    if(prod.brand) r['Brand (product.metafields.custom.brand)']=prod.brand;
+    if(v.costCAD) r['Cost CAD (product.metafields.custom.cost_cad)']=String(Math.round(v.costCAD));
+    if(v.costUSD) r['Cost USD (product.metafields.custom.cost_usd)']=String(Math.round(v.costUSD));
+    if(mf.material) r['Materials (product.metafields.custom.materials)']=mf.material;
+    if(v.shipUSD) r['Shipping cost USD (product.metafields.custom.shipping_cost_usd)']=String(Math.round(v.shipUSD));
   }
   r['Published']='false';r['Variant SKU']=v.sku||'';r['Variant Grams']=String((v.weightKg||0)*1000);
   r['Variant Inventory Tracker']='shopify';r['Variant Inventory Policy']='continue';
