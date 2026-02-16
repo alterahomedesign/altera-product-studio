@@ -1,0 +1,334 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Altera Product Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;background:#09090b;color:#e4e2de;font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sp{to{transform:rotate(360deg)}}.fi{animation:fi .4s ease forwards}
+input,textarea,select{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#e4e2de;border-radius:10px;padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%;transition:border .2s}
+input:focus,textarea:focus{border-color:#b8965a}
+.bp{background:linear-gradient(135deg,#b8965a,#8f6d3a);color:#09090b;border:none;border-radius:12px;padding:12px 22px;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .25s;font-family:'DM Sans',sans-serif}
+.bp:hover{box-shadow:0 6px 20px rgba(184,150,90,.25);transform:translateY(-1px)}.bp:disabled{opacity:.25;cursor:not-allowed;transform:none}
+.bs{background:rgba(255,255,255,.05);color:#ccc;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 18px;font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.bs:hover{background:rgba(255,255,255,.08)}
+.lb{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#666;margin-bottom:6px;display:block;font-family:'Space Mono',monospace}
+.cd{background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:24px;margin-bottom:14px}
+.tg{display:inline-block;padding:3px 10px;border-radius:16px;font-size:9px;font-weight:600;background:rgba(184,150,90,.1);color:#b8965a;border:1px solid rgba(184,150,90,.18);margin:2px}
+.mono{font-family:'Space Mono',monospace}.serif{font-family:'Playfair Display',serif}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.flex{display:flex;gap:10px;align-items:center}.fw{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;top:20px;right:20px;z-index:1000;background:#161618;border:1px solid rgba(184,150,90,.25);border-radius:14px;padding:12px 20px;font-size:12px;font-weight:600;box-shadow:0 16px 40px rgba(0,0,0,.5);display:none;align-items:center;gap:8px}.toast.show{display:flex}
+.errbar{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:1000;background:#1f1012;border:1px solid #4a2028;border-radius:14px;padding:12px 20px;max-width:550px;font-size:12px;display:none;align-items:center;gap:10px}.errbar.show{display:flex}
+.lov{position:fixed;inset:0;z-index:900;background:rgba(9,9,11,.96);backdrop-filter:blur(24px);display:none;flex-direction:column;align-items:center;justify-content:center}.lov.show{display:flex}
+.spin{width:48px;height:48px;border:2.5px solid rgba(255,255,255,.05);border-top:2.5px solid #b8965a;border-radius:50%;animation:sp .9s linear infinite;margin-bottom:24px}
+.mspin{width:16px;height:16px;border:2px solid rgba(255,255,255,.05);border-top:2px solid #b8965a;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+.dropzone{border:2px dashed rgba(255,255,255,.06);border-radius:16px;padding:36px;text-align:center;cursor:pointer;transition:border-color .2s}.dropzone:hover,.dropzone.over{border-color:rgba(184,150,90,.3)}
+.sell-in{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#b8965a;background:rgba(184,150,90,.04);border-color:rgba(184,150,90,.15)}
+header{padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.03);flex-wrap:wrap;gap:8px}
+main{max-width:1400px;margin:0 auto;padding:24px 24px 60px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);overflow-x:auto}
+.tab{padding:8px 16px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);color:#888;white-space:nowrap;transition:all .2s}
+.tab.active{background:rgba(184,150,90,.1);border-color:rgba(184,150,90,.25);color:#b8965a}
+.tab:hover{background:rgba(255,255,255,.06)}
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px}
+.icard{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1;cursor:pointer;border:3px solid transparent;transition:all .2s}.icard.sel{border-color:#b8965a}
+.icard img{width:100%;height:100%;object-fit:cover}
+.iov{position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+</style></head><body>
+<div id="toast" class="toast"><div style="width:6px;height:6px;border-radius:50%;background:#b8965a"></div><span id="toast-msg"></span></div>
+<div id="errbar" class="errbar"><span style="color:#ef4444">⚠</span><span id="err-msg" style="flex:1"></span><button onclick="hideErr()" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px">×</button></div>
+<div id="lov" class="lov"><div class="spin"></div><p id="lov-text" class="serif" style="font-size:22px;text-align:center;max-width:360px"></p><div style="width:240px;height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-top:16px"><div id="lov-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#b8965a,#8f6d3a);transition:width .5s"></div></div></div>
+
+<header>
+  <div class="flex"><span class="serif" style="font-size:18px;font-weight:600"><span style="color:#b8965a">Altera</span><span style="color:#4a4a4a;font-weight:400;font-size:12px;margin-left:5px">Product Studio</span></span></div>
+  <div class="flex" style="flex-wrap:wrap">
+    <span id="h-fx" class="mono" style="font-size:9px;color:#b8965a;padding:4px 10px;background:rgba(184,150,90,.06);border-radius:8px">1 USD = 1.44 CAD</span>
+    <button class="bs" style="padding:6px 12px;font-size:9px" onclick="toggleSettings()">⚙</button>
+  </div>
+</header>
+
+<main>
+<!-- STEP 0: UPLOAD -->
+<div id="step0" class="fi" style="max-width:640px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:36px">
+    <h1 class="serif" style="font-size:38px;font-weight:400;line-height:1.1;margin-bottom:10px">Product <span style="font-style:italic;color:#b8965a">Studio</span></h1>
+    <p style="color:#555;font-size:12px;max-width:420px;margin:0 auto">Upload a supplier catalog (Excel/PDF) or product images. AI extracts all products, generates copy, pricing, and Shopify-ready CSV.</p>
+  </div>
+  <div class="cd">
+    <label class="lb">Supplier Catalog (Excel or PDF)</label>
+    <div class="dropzone" onclick="$('cf').click()" id="cdz">
+      <input id="cf" type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="handleCatalog(this.files[0])">
+      <div style="font-size:28px;margin-bottom:8px">📋</div>
+      <p style="font-size:12px;font-weight:600">Drop catalog or click to browse</p>
+      <p style="font-size:10px;color:#555;margin-top:4px">Excel, PDF, or CSV — all products extracted</p>
+    </div>
+  </div>
+  <div style="text-align:center;color:#444;font-size:11px;margin:16px 0">— or —</div>
+  <div class="cd">
+    <label class="lb">Single Product Images</label>
+    <div class="dropzone" onclick="$('fi').click()" id="idz">
+      <input id="fi" type="file" multiple accept="image/*" style="display:none" onchange="handleImages(this.files)">
+      <div style="font-size:28px;margin-bottom:8px">🖼️</div>
+      <p style="font-size:12px;font-weight:600">Drop images or click to browse</p>
+    </div>
+    <div id="thumbs" class="fw" style="margin-top:12px"></div>
+  </div>
+  <button id="btn-go" class="bp" style="width:100%;padding:14px" disabled onclick="runSingle()">Analyze & Generate →</button>
+</div>
+
+<!-- STEP 1: PRODUCT TABS + EDITOR -->
+<div id="step1" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+    <h2 class="serif" style="font-size:24px"><span id="pcount">0</span> Products</h2>
+    <div class="flex" style="flex-wrap:wrap">
+      <button class="bs" onclick="genAllCopy()" id="btn-genall">✨ Generate All Copy</button>
+      <button class="bs" onclick="dlBulkCSV()">↓ Bulk CSV</button>
+      <button class="bp" onclick="dlBulkZip()">↓ Bulk ZIP</button>
+    </div>
+  </div>
+  <div id="tabs" class="tabs"></div>
+  <div id="editor"></div>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const D={products:[],activeTab:0,imgs:[],b64s:[],fxRate:1.44,markup:3,brand:'',settings:{}};
+const SCENES_CACHE={};
+async function getScenesForCat(catKey){
+  if(SCENES_CACHE[catKey])return SCENES_CACHE[catKey];
+  try{const r=await fetch('/api/scenes/'+catKey);const d=await r.json();SCENES_CACHE[catKey]=d.scenes;return d.scenes}catch{return[{t:'Studio Front',s:1,p:'White background'},{t:'Modern Interior',p:'Modern interior'}]}
+}
+function toast(m){$('toast-msg').textContent=m;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),3500)}
+function showErr(m){$('err-msg').textContent=m;$('errbar').classList.add('show')}
+function hideErr(){$('errbar').classList.remove('show')}
+function showL(t,p){$('lov-text').textContent=t;$('lov-bar').style.width=p+'%';$('lov').classList.add('show')}
+function hideL(){$('lov').classList.remove('show')}
+function toggleSettings(){/* TODO */}
+
+(async()=>{
+  D.brand=localStorage.getItem('ap_brand')||'';D.fxRate=parseFloat(localStorage.getItem('ap_fx'))||1.44;D.markup=parseFloat(localStorage.getItem('ap_mk'))||3;
+  $('h-fx').textContent='1 USD = '+D.fxRate.toFixed(2)+' CAD';
+  try{const r=await fetch('https://api.exchangerate-api.com/v4/latest/USD');const d=await r.json();if(d.rates?.CAD){D.fxRate=d.rates.CAD;$('h-fx').textContent='1 USD = '+D.fxRate.toFixed(2)+' CAD'}}catch{}
+  ['cdz','idz'].forEach(id=>{const el=$(id);el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('over')});el.addEventListener('dragleave',()=>el.classList.remove('over'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('over');if(id==='cdz')handleCatalog(e.dataTransfer.files[0]);else handleImages(e.dataTransfer.files)})});
+})();
+
+// ═══ FILE HANDLING ═══
+const f2b=f=>new Promise(r=>{const x=new FileReader();x.onloadend=()=>r(x.result);x.readAsDataURL(f)});
+const compressImg=(dataUrl,maxKB=4000)=>new Promise(r=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');let w=img.width,h=img.height;const max=2048;if(w>max||h>max){const s=Math.min(max/w,max/h);w=Math.round(w*s);h=Math.round(h*s)}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=0.85;const try_=()=>{const out=c.toDataURL('image/jpeg',q);if(out.length*0.75>maxKB*1024&&q>0.3){q-=0.1;try_()}else r(out)};try_()};img.src=dataUrl});
+async function handleImages(files){for(const f of Array.from(files)){let b=await f2b(f);if(b.length>5*1024*1024){b=await compressImg(b)}D.imgs.push(b);D.b64s.push(b.split(',')[1])}renderThumbs();$('btn-go').disabled=!D.imgs.length}
+function renderThumbs(){$('thumbs').innerHTML='';D.imgs.forEach((img,i)=>{const d=document.createElement('div');d.style.cssText='width:72px;height:72px;border-radius:12px;overflow:hidden;position:relative;border:2px solid rgba(255,255,255,.05)';d.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover"><button onclick="D.imgs.splice('+i+',1);D.b64s.splice('+i+',1);renderThumbs();$(\'btn-go\').disabled=!D.imgs.length" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(220,50,50,.85);border:none;color:#fff;font-size:10px;cursor:pointer">×</button>';$('thumbs').appendChild(d)})}
+
+// ═══ CATALOG PARSE ═══
+async function handleCatalog(file){
+  if(!file)return; hideErr();
+  showL('Parsing catalog: '+file.name+'...',15);
+  const fd=new FormData(); fd.append('file',file);
+  try{
+    const r=await fetch('/api/parse-catalog',{method:'POST',body:fd});
+    if(!r.ok){
+      const ct=r.headers.get('content-type')||'';
+      if(ct.includes('json')){const e=await r.json();throw new Error(e.error||'Parse failed')}
+      else{const t=await r.text();throw new Error('Server error '+r.status+': '+(t.substring(0,100)))}
+    }
+    const d=await r.json();
+    showL('Found '+d.products.length+' products'+(d.imageCount?' with '+d.imageCount+' images':'')+'...',60);
+    D.products=d.products.map((p,i)=>({
+      id:'p'+i, raw:p, title:'', catKey:p.categoryKey||'tv-cabinet',
+      supplierName:p.supplierName||'Product '+(i+1), modelNumber:p.modelNumber||'',
+      material:p.material||'', dimensions:p.dimensions||'', costUSD:p.costUSD||0,
+      weightKg:p.weightKg||0, hasVariants:p.hasVariants||false, variants:p.variants||[], variant:null,
+      htmlDescription:'', seoTitle:'', seoDescription:'', tags:[],
+      metafields:p, brand:D.brand||'Altera Home Design', generated:false,
+      originalImages:p.imageB64?[p.imageB64, ...(p.extraImages||[]).map(x=>x.b64)]:[], aiImages:[], shopifyCategory:'', googleShoppingCat:'', type:''
+    }));
+    hideL(); $('step0').style.display='none'; $('step1').style.display='';
+    $('pcount').textContent=D.products.length;
+    renderTabs(); renderEditor();
+  }catch(e){hideL();showErr(e.message)}
+}
+
+// ═══ SINGLE IMAGE MODE ═══
+async function runSingle(){
+  if(!D.imgs.length)return;hideErr();
+  showL('Analyzing images...',20);
+  try{
+    const r=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:D.b64s,fxRate:D.fxRate,markup:D.markup,brand:D.brand})});
+    if(!r.ok){const e=await r.json();throw new Error(e.error)}
+    const d=await r.json();
+    D.products=[{id:'p0',raw:d,title:d.title,catKey:d.catKey,supplierName:d.title,modelNumber:'',material:d.metafields?.material||'',dimensions:d.variant?.dimensions||'',costUSD:d.variant?.costUSD||0,weightKg:d.variant?.weightKg||0,hasVariants:d.hasVariants||false,variant:d.variant,htmlDescription:d.htmlDescription,seoTitle:d.seoTitle,seoDescription:d.seoDescription,tags:d.tags||[],creativeNames:d.creativeNames,metafields:d.metafields||{},brand:d.brand,generated:true,originalImages:D.b64s,aiImages:[],shopifyCategory:d.shopifyCategory,googleShoppingCat:d.googleShoppingCat,type:d.type,collection:d.collection}];
+    hideL();$('step0').style.display='none';$('step1').style.display='';$('pcount').textContent='1';
+    renderTabs();renderEditor();
+  }catch(e){hideL();showErr(e.message)}
+}
+
+// ═══ TABS ═══
+function renderTabs(){
+  $('tabs').innerHTML='';
+  D.products.forEach((p,i)=>{
+    const t=document.createElement('div');t.className='tab'+(i===D.activeTab?' active':'');
+    t.textContent=(p.title||p.supplierName||'Product '+(i+1)).substring(0,25);
+    t.onclick=()=>{D.activeTab=i;renderTabs();renderEditor()};
+    if(p.generated)t.style.borderLeftColor='#22c55e';
+    $('tabs').appendChild(t);
+  });
+}
+
+// ═══ EDITOR ═══
+function renderEditor(){
+  const p=D.products[D.activeTab]; if(!p)return;
+  const v=p.variant||{};
+  $('editor').innerHTML=`<div class="fi">
+  <div class="cd" style="background:rgba(184,150,90,.02);border-color:rgba(184,150,90,.08)">
+    <div class="flex" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><span class="lb" style="margin-bottom:2px">Supplier</span><span style="font-size:14px;font-weight:600">${p.supplierName}</span><span class="mono" style="font-size:10px;color:#555;margin-left:8px">${p.modelNumber||''}</span></div>
+      <div class="flex"><span class="mono" style="font-size:10px;color:#888">${p.material} · ${p.dimensions} · $${p.costUSD} USD · ${p.weightKg}kg</span>
+      ${!p.generated?'<button class="bp" style="padding:8px 16px" onclick="genCopy('+D.activeTab+')">✨ Generate Copy</button>':'<span class="tg" style="background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.2)">Generated</span>'}</div>
+    </div>
+  </div>
+  ${p.generated?renderProductForm(p):'<div style="text-align:center;padding:40px;color:#555"><p>Click "Generate Copy" to create title, description, SEO, and pricing for this product.</p></div>'}
+  </div>`;
+}
+
+function renderProductForm(p){
+  const v=p.variant||{};
+  return `<div class="g2">
+  <div>
+    <div class="cd"><label class="lb">Product Title</label><input value="${esc(p.title)}" class="serif" style="font-size:15px;font-weight:600" onchange="updP('title',this.value)">
+    ${(p.creativeNames||[]).map(n=>'<button style="margin:4px 2px 0;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#888;font-size:10px;cursor:pointer" onclick="setName('+D.activeTab+',\''+esc(n)+'\')">'+n+'</button>').join('')}</div>
+    <div class="cd"><label class="lb">HTML Description</label><textarea style="height:160px;resize:vertical;font-family:'Space Mono',monospace;font-size:10px;line-height:1.5" onchange="updP('htmlDescription',this.value)">${esc(p.htmlDescription)}</textarea>
+    <details style="margin-top:8px"><summary style="font-size:10px;color:#555;cursor:pointer">Preview</summary><div style="margin-top:6px;padding:12px;background:rgba(255,255,255,.015);border-radius:10px;font-size:12px;line-height:1.5">${p.htmlDescription}</div></details></div>
+    <div class="g2"><div class="cd"><label class="lb">Brand</label><input value="${esc(p.brand)}" onchange="updP('brand',this.value)"></div><div class="cd"><label class="lb">Type</label><input value="${esc(p.type)}" onchange="updP('type',this.value)"></div></div>
+    <div class="cd"><label class="lb">Shopify Category</label><input value="${esc(p.shopifyCategory)}" onchange="updP('shopifyCategory',this.value)"></div>
+  </div>
+  <div>
+    <div class="cd"><label class="lb">SEO Title</label><input value="${esc(p.seoTitle)}" onchange="updP('seoTitle',this.value)"><span class="mono" style="font-size:9px;color:#444">${(p.seoTitle||'').length}/60</span></div>
+    <div class="cd"><label class="lb">SEO Description</label><textarea style="height:55px;resize:none" onchange="updP('seoDescription',this.value)">${esc(p.seoDescription)}</textarea><span class="mono" style="font-size:9px;color:#444">${(p.seoDescription||'').length}/155</span></div>
+    <div class="cd"><label class="lb">Tags</label><input value="${esc((p.tags||[]).join(', '))}" onchange="updP('tags',this.value.split(',').map(s=>s.trim()).filter(Boolean))"><div class="fw" style="margin-top:4px">${(p.tags||[]).map(t=>'<span class="tg">'+t+'</span>').join('')}</div></div>
+    <div class="cd" style="background:rgba(184,150,90,.025);border-color:rgba(184,150,90,.1)">
+      <label class="lb" style="color:#b8965a">Pricing</label>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:10px">
+        <div><span style="color:#666;display:block">Cost USD</span><span class="mono" style="font-size:14px;font-weight:700">$${v.costUSD||0}</span></div>
+        <div><span style="color:#666;display:block">Ship USD</span><span class="mono" style="font-size:14px;font-weight:700">$${v.shipUSD||0}</span></div>
+        <div><span style="color:#666;display:block">Cost CAD</span><span class="mono" style="font-size:14px;font-weight:700">$${v.costCAD||0}</span></div>
+        <div><span style="color:#666;display:block">Sell CAD</span><input type="number" value="${v.sellCAD||0}" class="sell-in" style="width:90px;padding:6px" onchange="updV('sellCAD',+this.value)"></div>
+      </div>
+      <div style="margin-top:6px;font-size:9px;color:#555">SKU: ${v.sku||''} · Weight: ${v.weightKg||0}kg</div>
+    </div>
+    <div class="cd">
+      <label class="lb">Product Images</label>
+      <div class="dropzone" style="padding:16px" onclick="document.getElementById('pimg'+${D.activeTab}).click()">
+        <input type="file" id="pimg${D.activeTab}" multiple accept="image/*" style="display:none" onchange="addProductImages(${D.activeTab},this.files)">
+        <p style="font-size:11px">+ Add images for this product</p>
+      </div>
+      ${(p.originalImages||[]).length?'<div class="fw" style="margin-top:8px">'+p.originalImages.map((img,i)=>'<div style="width:60px;height:60px;border-radius:8px;overflow:hidden"><img src="data:image/png;base64,'+img+'" style="width:100%;height:100%;object-fit:cover"></div>').join('')+'</div>':''}
+      ${(p.originalImages||[]).length?'<button class="bp" style="margin-top:10px;width:100%;padding:10px" onclick="runPhotoshoot('+D.activeTab+')"'+(p.photoProgress?' disabled':'')+'>'+(p.photoProgress?'⏳ Generating '+p.photoProgress.current+'/'+p.photoProgress.total+': '+esc(p.photoProgress.scene):'📸 AI Photoshoot (10 scenes)')+'</button>':''}
+      ${p.photoProgress?'<div style="margin-top:6px;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div style="width:'+Math.round(p.photoProgress.current/p.photoProgress.total*100)+'%;height:100%;background:linear-gradient(90deg,#b8965a,#8f6d3a);transition:width .5s"></div></div>':''}
+    </div>
+    ${(p.aiImages||[]).length?'<div class="cd"><label class="lb">AI Photoshoot — '+p.aiImages.length+' images</label><div class="igrid">'+p.aiImages.map(img=>'<div class="icard sel" style="aspect-ratio:1"><img src="data:'+((img.b64||'').startsWith('/9')?'image/jpeg':'image/png')+';base64,'+img.b64+'" style="width:100%;height:100%;object-fit:cover"><div class="iov"><span style="font-size:9px;font-weight:600;color:#fff">'+esc(img.scene)+'</span></div></div>').join('')+'</div></div>':''}
+  </div></div>`;
+}
+
+function esc(s){return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function updP(k,v){D.products[D.activeTab][k]=v;if(k==='title')renderTabs()}
+function updV(k,v){if(D.products[D.activeTab].variant)D.products[D.activeTab].variant[k]=v}
+
+function setName(idx,name){
+  const p=D.products[idx];
+  const typeCap=(p.type||'furniture').split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const oldTitle=p.title;
+  const newTitle='The '+name+' '+typeCap;
+  p.title=newTitle;
+  if(oldTitle){p.htmlDescription=(p.htmlDescription||'').replaceAll(oldTitle,newTitle);p.seoTitle=(p.seoTitle||'').replaceAll(oldTitle,newTitle);p.seoDescription=(p.seoDescription||'').replaceAll(oldTitle,newTitle)}
+  renderTabs();renderEditor();
+}
+
+async function addProductImages(idx,files){
+  const p=D.products[idx]; if(!p.originalImages)p.originalImages=[];
+  for(const f of Array.from(files)){let b=await f2b(f);if(b.length>5*1024*1024){b=await compressImg(b)}p.originalImages.push(b.split(',')[1])}
+  renderEditor();
+}
+
+async function runPhotoshoot(idx){
+  const p=D.products[idx]; if(!p.originalImages?.length){toast('Add images first');return}
+  const scenes=await getScenesForCat(p.catKey||'sofa');
+  if(!p.aiImages)p.aiImages=[];
+  p.photoProgress={current:0,total:scenes.length,scene:''};
+  renderEditor();
+  toast('Photoshoot started in background — '+scenes.length+' scenes');
+
+  // Run in background (non-blocking)
+  (async()=>{
+    for(let i=0;i<scenes.length;i++){
+      const sc=scenes[i];
+      p.photoProgress={current:i+1,total:scenes.length,scene:sc.t};
+      if(D.activeTab===idx)renderEditor();
+      try{
+        const r=await fetch('/api/photoshoot-scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:p.originalImages.slice(0,2),title:p.title||p.supplierName,scene:sc.t,scenePrompt:sc.p||'',isStudio:!!sc.s,dimensions:p.dimensions||'',creative:'',catKey:p.catKey||'sofa'})});
+        if(!r.ok){const t=await r.text();console.error('Scene failed:',sc.t,r.status,t.substring(0,200));continue}
+        const d=await r.json();
+        console.log('Scene result:',sc.t,'hasImage:',!!d.image,'imageLen:',d.image?.length,'keys:',Object.keys(d));
+        if(d.image){p.aiImages.push({scene:sc.t,b64:d.image});if(D.activeTab===idx)renderEditor()}
+      }catch(e){console.error('Scene error:',sc.t,e)}
+    }
+    p.photoProgress=null;
+    if(D.activeTab===idx)renderEditor();
+    toast('✓ Photoshoot complete: '+p.aiImages.length+' images for '+p.title);
+  })();
+}
+
+// ═══ GENERATE COPY ═══
+async function genCopy(idx){
+  const p=D.products[idx];hideErr();showL('Generating copy for '+p.supplierName+'...',30);
+  try{
+    const r=await fetch('/api/generate-copy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product:p.raw||p,images:p.originalImages||[],brand:D.brand||'Altera Home Design',fxRate:D.fxRate,markup:D.markup})});
+    if(!r.ok){const e=await r.json();throw new Error(e.error)}
+    const d=await r.json();
+    Object.assign(p,{title:d.title,catKey:d.catKey,collection:d.collection,type:d.type,shopifyCategory:d.shopifyCategory,googleShoppingCat:d.googleShoppingCat,creativeNames:d.creativeNames,htmlDescription:d.htmlDescription,seoTitle:d.seoTitle,seoDescription:d.seoDescription,tags:d.tags,hasVariants:d.hasVariants,variant:d.variant,brand:d.brand,metafields:d.metafields,generated:true});
+    hideL();renderTabs();renderEditor();toast('Generated: '+d.title);
+  }catch(e){hideL();showErr(e.message)}
+}
+
+async function genAllCopy(){
+  const ungen=D.products.filter(p=>!p.generated);
+  if(!ungen.length){toast('All products already generated');return}
+  for(let i=0;i<D.products.length;i++){
+    if(D.products[i].generated)continue;
+    D.activeTab=i;renderTabs();
+    showL('Generating '+(i+1)+'/'+D.products.length+': '+D.products[i].supplierName+'...',Math.round(i/D.products.length*100));
+    try{await genCopy(i)}catch{}
+    await new Promise(r=>setTimeout(r,500));
+  }
+  hideL();toast('All '+D.products.length+' products generated!');
+}
+
+// ═══ EXPORTS ═══
+function getExportProducts(){
+  return D.products.filter(p=>p.generated).map(p=>({
+    title:p.title,htmlDescription:p.htmlDescription,brand:p.brand,type:p.type,
+    shopifyCategory:p.shopifyCategory,googleShoppingCat:p.googleShoppingCat,
+    seoTitle:p.seoTitle,seoDescription:p.seoDescription,tags:p.tags,
+    hasVariants:p.hasVariants,variant:p.variant,variants:p.variants,
+    metafields:p.metafields,aiImages:(p.aiImages||[]).map(x=>({scene:x.scene,b64:x.b64})),
+    originalImages:p.originalImages||[]
+  }));
+}
+
+async function dlBulkCSV(){
+  const prods=getExportProducts();
+  if(!prods.length){toast('Generate copy first');return}
+  toast('Building CSV for '+prods.length+' products...');
+  const r=await fetch('/api/export-bulk-csv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
+  if(!r.ok){showErr('CSV failed');return}
+  const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_import.csv';a.click();URL.revokeObjectURL(a.href);toast('CSV exported!');
+}
+
+async function dlBulkZip(){
+  const prods=getExportProducts();
+  if(!prods.length){toast('Generate copy first');return}
+  toast('Building ZIP for '+prods.length+' products...');
+  const r=await fetch('/api/export-bulk-zip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
+  if(!r.ok){showErr('ZIP failed');return}
+  const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_package.zip';a.click();URL.revokeObjectURL(a.href);toast('ZIP exported!');
+}
+</script></body></html>
