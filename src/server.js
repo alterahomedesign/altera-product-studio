@@ -20,7 +20,12 @@ const parseDims=s=>{if(!s)return{l:0,w:0,h:0};const parts=s.replace(/[cm"]/gi,''
 const cmToFrac=cm=>{const t=cm*.393701,w=Math.floor(t),r=t-w,e=Math.round(r*8);if(!e)return w+'"';if(e===8)return(w+1)+'"';let n=e,d=8;if(n%4===0){n/=4;d=2}else if(n%2===0){n/=2;d=4}return w+' '+n+'/'+d+'"'};
 const fmtDims=s=>{if(!s)return'';const d=parseDims(s);const labels=['length','width','height'];const vals=[d.l,d.w,d.h];return vals.map((v,i)=>{if(!v)return'';return Math.round(v)+'cm ('+cmToFrac(v)+') '+labels[i]}).filter(Boolean).join(' x ').trim()};
 const estWeight=(k,cm)=>{const w=CATS[k]?.w||{b:25,p:.15};return w.b+(cm||0)*w.p};
-const genSKU=(m,s)=>{const x=v=>(v||'').replace(/[^a-z0-9]/gi,'').toUpperCase().slice(0,5);return x(m||'PROD')+'-'+x(String(s||'OS'))};
+// SKU: use model number directly if available (e.g. KT-907), otherwise generate from supplier
+const genSKU=(m,s)=>{
+  if(m && m.trim()) return m.trim().toUpperCase();
+  const x=v=>(v||'').replace(/[^a-z0-9]/gi,'').toUpperCase().slice(0,5);
+  return x('PROD')+'-'+x(String(s||'OS'));
+};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const esc=v=>{const s=String(v??'');return/[,"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
 const emptyRow=()=>Object.fromEntries(CSV_H.map(h=>[h,'']));
@@ -173,16 +178,30 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
 
       // Extract JPEG and PNG images from PDF stream
       const pdfImages = [];
+      // Helper: get JPEG dimensions from SOF marker
+      const jpegDims = (b) => {
+        for(let i=0;i<b.length-9;i++){
+          if(b[i]===0xFF && (b[i+1]>=0xC0 && b[i+1]<=0xC3) && b[i+1]!==0xC1){
+            return {h: b.readUInt16BE(i+5), w: b.readUInt16BE(i+7)};
+          }
+        }
+        return null;
+      };
       // Find JPEG images (FF D8 start, FF D9 end)
       for(let i = 0; i < buf.length - 2; i++){
         if(buf[i] === 0xFF && buf[i+1] === 0xD8 && buf[i+2] === 0xFF){
-          // Find JPEG end marker
           for(let j = i + 3; j < buf.length - 1; j++){
             if(buf[j] === 0xFF && buf[j+1] === 0xD9){
               const imgBuf = buf.slice(i, j + 2);
-              // Only keep images > 5KB (skip thumbnails/icons)
               if(imgBuf.length > 5000){
-                pdfImages.push({b64: imgBuf.toString('base64'), mime: 'image/jpeg'});
+                // Skip logos/banners: aspect ratio > 2.0 means very wide/short
+                const dims = jpegDims(imgBuf);
+                const aspect = dims ? dims.w / dims.h : 1;
+                if(aspect <= 2.0){
+                  pdfImages.push({b64: imgBuf.toString('base64'), mime: 'image/jpeg'});
+                } else {
+                  console.log('Skipped banner/logo image:', dims?.w+'x'+dims?.h, 'aspect:', aspect.toFixed(2));
+                }
               }
               i = j + 1;
               break;
@@ -191,21 +210,28 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
         }
       }
       // Find PNG images (89 50 4E 47 start, IEND end)
-      const pngSig = Buffer.from([0x89,0x50,0x4E,0x47]);
       const pngEnd = Buffer.from('IEND');
       for(let i = 0; i < buf.length - 8; i++){
         if(buf[i]===0x89 && buf[i+1]===0x50 && buf[i+2]===0x4E && buf[i+3]===0x47){
           const endIdx = buf.indexOf(pngEnd, i + 8);
           if(endIdx > i){
-            const imgBuf = buf.slice(i, endIdx + 12); // IEND + 4 byte CRC
+            const imgBuf = buf.slice(i, endIdx + 12);
             if(imgBuf.length > 5000){
-              pdfImages.push({b64: imgBuf.toString('base64'), mime: 'image/png'});
+              // Check PNG dimensions (width at offset 16, height at 20)
+              const pw = imgBuf.length > 24 ? imgBuf.readUInt32BE(16) : 0;
+              const ph = imgBuf.length > 24 ? imgBuf.readUInt32BE(20) : 0;
+              const aspect = ph > 0 ? pw / ph : 1;
+              if(aspect <= 2.0){
+                pdfImages.push({b64: imgBuf.toString('base64'), mime: 'image/png'});
+              } else {
+                console.log('Skipped PNG banner/logo:', pw+'x'+ph, 'aspect:', aspect.toFixed(2));
+              }
             }
             i = endIdx + 12;
           }
         }
       }
-      console.log('PDF images extracted:', pdfImages.length);
+      console.log('PDF product images extracted:', pdfImages.length, '(logos/banners filtered out)');
 
       // Build Claude request: PDF document + extracted images for matching
       const content = [];
@@ -257,10 +283,19 @@ app.post('/api/generate-copy', async(req,res)=>{
     const ck=Object.keys(CATS).includes(p.categoryKey)?p.categoryKey:'tv-cabinet';
     const ci=CATS[ck];const dimsF=fmtDims(p.dimensions);
     const content=[];
-    if(images?.length)images.forEach(img=>content.push({type:'image',source:{type:'base64',media_type:'image/png',data:img}}));
+    if(images?.length){
+      images.forEach(img=>{
+        // Detect actual MIME from base64 header
+        let mime='image/png';
+        if(img.startsWith('/9j/'))mime='image/jpeg';
+        else if(img.startsWith('R0lGOD'))mime='image/gif';
+        content.push({type:'image',source:{type:'base64',media_type:mime,data:img}});
+      });
+    }
     const assignedCity = pickRandomCity();
     usedNames.add(assignedCity);
-    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: You MUST use exactly "'+assignedCity+'" as the city name. This has been pre-selected for this product.\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia, Lirael, Vespera, Fiora, Amarisse\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance, Lumière, Encore, Atelier\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features. NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
+    const hasImages = images?.length > 0;
+    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\n'+(hasImages?'IMPORTANT: Look carefully at the product image(s) above. Your description MUST accurately describe what you SEE in the image — the shape, design, color, upholstery, armrests, base type, back style, and any visible features. Do NOT invent features not visible in the image.\n':'')+'\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: You MUST use exactly "'+assignedCity+'" as the city name. This has been pre-selected for this product.\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia, Lirael, Vespera, Fiora, Amarisse\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance, Lumière, Encore, Atelier\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Describe what you see in the image — the actual design, shape, color, upholstery style. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features (based on what you observe). NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
     const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.',content);
     const cp=parseJSON(cpR);
     const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
