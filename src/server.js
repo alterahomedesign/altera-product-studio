@@ -9,7 +9,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const CLAUDE_KEY = process.env.CLAUDE_API_KEY || '';
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 
-const CATS = {"sofa":{col:"Sofas",sCat:"Furniture > Sofas > Sectional Sofas",type:"sofa",gsc:"460",w:{b:45,p:.35}},"bed":{col:"Beds",sCat:"Furniture > Beds & Accessories > Beds & Bed Frames > Platform Beds & Bed Frames",type:"bed",gsc:"505",w:{b:55,p:.3}},"mattress":{col:"Mattresses",sCat:"Furniture > Beds & Accessories > Mattresses > Innerspring Mattresses",type:"mattress",gsc:"2621",w:{b:30,p:.2}},"dining-table":{col:"Dining Tables",sCat:"Furniture > Tables > Kitchen & Dining Room Tables",type:"dining table",gsc:"6362",w:{b:40,p:.25}},"dining-set":{col:"Dining Table Sets",sCat:"Furniture > Furniture Sets > Kitchen & Dining Furniture Sets",type:"dining set",gsc:"6362",w:{b:60,p:.3}},"dining-chair":{col:"Dining Chairs",sCat:"Furniture > Chairs > Kitchen & Dining Room Chairs",type:"dining chair",gsc:"443",w:{b:8,p:.04}},"coffee-table":{col:"Coffee Tables & Side Tables",sCat:"Furniture > Tables > Accent Tables > Coffee Tables",type:"Coffee Table",gsc:"6362",w:{b:25,p:.18}},"side-table":{col:"Coffee Tables & Side Tables",sCat:"Furniture > Tables > Accent Tables > End Tables",type:"side table",gsc:"6362",w:{b:12,p:.1}},"nightstand":{col:"Nightstands",sCat:"Furniture > Tables > Nightstands",type:"nightstand",gsc:"6362",w:{b:10,p:.05}},"tv-cabinet":{col:"TV Cabinets",sCat:"Furniture > Entertainment Centers & TV Stands",type:"tv cabinet",gsc:"6356",w:{b:30,p:.2}},"sideboard":{col:"Sideboards",sCat:"Furniture > Cabinets & Storage > Sideboards",type:"sideboard",gsc:"6343",w:{b:35,p:.22}},"wardrobe":{col:"Wardrobes",sCat:"Furniture > Cabinets & Storage > Armoires & Wardrobes > Hinged Door Wardrobes",type:"wardrobe",gsc:"6343",w:{b:50,p:.35}},"office-desk":{col:"Office Desks",sCat:"Furniture > Office Furniture > Desks",type:"office desk",gsc:"6362",w:{b:30,p:.2}},"living-room-chair":{col:"Living Room Chairs",sCat:"Furniture > Chairs > Armchairs, Recliners & Sleeper Chairs > Armchairs",type:"living room chair",gsc:"443",w:{b:18,p:.08}},"bar-stool":{col:"Dining Chairs",sCat:"Furniture > Chairs > Table & Bar Stools > Bar Stools",type:"bar stool",gsc:"443",w:{b:10,p:.04}},"bedroom-bench":{col:"Bedroom Benches",sCat:"Furniture > Benches > Kitchen & Dining Benches > Dining Benches",type:"bedroom bench",gsc:"443",w:{b:15,p:.1}},"bedroom-set":{col:"Bedroom Sets",sCat:"Furniture > Furniture Sets > Bedroom Furniture Sets",type:"bedroom sets",gsc:"505",w:{b:80,p:.4}},"shoe-cabinet":{col:"Shoe Cabinets",sCat:"Home & Garden > Household Supplies > Storage & Organization > Clothing & Closet Storage > Shoe Racks & Organizers > Shoe Organizers",type:"shoe cabinet",gsc:"6343",w:{b:20,p:.15}},"rug":{col:"Rugs",sCat:"Home & Garden > Decor > Rugs",type:"rug",gsc:"4227",w:{b:8,p:.05}},"floor-lamp":{col:"Lighting",sCat:"Home & Garden > Lighting > Lamps > Floor Lamps",type:"lighting",gsc:"594",w:{b:8,p:.02}},"table-lamp":{col:"Lighting",sCat:"Home & Garden > Lighting > Lamps > Table Lamps",type:"lighting",gsc:"594",w:{b:4,p:.01}},"ceiling-light":{col:"Lighting",sCat:"Home & Garden > Lighting > Lighting Fixtures > Ceiling Light Fixtures",type:"lighting",gsc:"594",w:{b:5,p:.02}},"pendant-light":{col:"Lighting",sCat:"Home & Garden > Lighting > Lighting Fixtures > Chandeliers",type:"lighting",gsc:"594",w:{b:6,p:.02}},"wall-light":{col:"Lighting",sCat:"Home & Garden > Lighting > Lighting Fixtures > Wall Light Fixtures",type:"lighting",gsc:"594",w:{b:3,p:.01}},"buffet":{col:"Sideboards",sCat:"Furniture > Cabinets & Storage > Buffets",type:"sideboard",gsc:"6343",w:{b:40,p:.25}}};
+const CATS = {"sofa":{col:"Sofas",sCat:"Furniture > Sofas > Sectional Sofas",type:"sofa",gsc:"460",w:{b:45,p:.35}},"bed":{col:"Beds",sCat:"Furniture > Beds & Accessories > Beds & Bed Frames > Platform Beds & Bed Frames",type:"bed",gsc:"505",w:{b:55,p:.3}},"mattress":{col:"Mattresses",sCat:"Furniture > Beds & Accessories > Mattresses > Innerspring Mattresses",type:"mattress",gsc:"2621",w:{b:30,p:.2}},"dining-table":{col:"Dining Tables",sCat:"Furniture > Tables > Kitchen & Dining Room Tables",type:"dining table",gsc:"6362",w:{b:40,p:.25}},"dining-set":{col:"Dining Table Sets",sCat:"Furniture > Furniture Sets > Kitchen & Dining Furniture Sets",type:"dining set",gsc:"6362",w:{b:60,p:.3}},"dining-chair":{col:"Dining Chairs",sCat:"Furniture > Chairs > Kitchen & Dining Room Chairs",type:"dining chair",gsc:"443",w:{b:8,p:.04}},"coffee-table":{col:"Coffee Tables & Side Tables",sCat:"Furniture > Tables > Accent Tables > Coffee Tables",type:"Coffee Table",gsc:"6362",w:{b:25,p:.18}},"side-table":{col:"Coffee Tables & Side Tables",sCat:"Furniture > Tables > Accent Tables > End Tables",type:"side table",gsc:"6362",w:{b:12,p:.1}},"nightstand":{col:"Nightstands",sCat:"Furniture > Tables > Nightstands",type:"nightstand",gsc:"6362",w:{b:10,p:.05}},"tv-cabinet":{col:"TV Cabinets",sCat:"Furniture > Entertainment Centers & TV Stands",type:"tv cabinet",gsc:"6356",w:{b:30,p:.2}},"sideboard":{col:"Sideboards",sCat:"Furniture > Cabinets & Storage > Sideboards",type:"sideboard",gsc:"6343",w:{b:35,p:.22}},"wardrobe":{col:"Wardrobes",sCat:"Furniture > Cabinets & Storage > Armoires & Wardrobes > Hinged Door Wardrobes",type:"wardrobe",gsc:"6343",w:{b:50,p:.35}},"office-desk":{col:"Office Desks",sCat:"Furniture > Office Furniture > Desks",type:"office desk",gsc:"6362",w:{b:30,p:.2}},"office-chair":{col:"Office Chairs",sCat:"Furniture > Office Furniture > Office Chairs",type:"office chair",gsc:"443",w:{b:15,p:.06}},"visitor-chair":{col:"Office Chairs",sCat:"Furniture > Office Furniture > Office Chairs",type:"visitor chair",gsc:"443",w:{b:15,p:.06}},"living-room-chair":{col:"Living Room Chairs",sCat:"Furniture > Chairs > Armchairs, Recliners & Sleeper Chairs > Armchairs",type:"living room chair",gsc:"443",w:{b:18,p:.08}},"bar-stool":{col:"Dining Chairs",sCat:"Furniture > Chairs > Table & Bar Stools > Bar Stools",type:"bar stool",gsc:"443",w:{b:10,p:.04}},"bedroom-bench":{col:"Bedroom Benches",sCat:"Furniture > Benches > Kitchen & Dining Benches > Dining Benches",type:"bedroom bench",gsc:"443",w:{b:15,p:.1}},"bedroom-set":{col:"Bedroom Sets",sCat:"Furniture > Furniture Sets > Bedroom Furniture Sets",type:"bedroom sets",gsc:"505",w:{b:80,p:.4}},"shoe-cabinet":{col:"Shoe Cabinets",sCat:"Home & Garden > Household Supplies > Storage & Organization > Clothing & Closet Storage > Shoe Racks & Organizers > Shoe Organizers",type:"shoe cabinet",gsc:"6343",w:{b:20,p:.15}},"rug":{col:"Rugs",sCat:"Home & Garden > Decor > Rugs",type:"rug",gsc:"4227",w:{b:8,p:.05}},"floor-lamp":{col:"Lighting",sCat:"Home & Garden > Lighting > Lamps > Floor Lamps",type:"lighting",gsc:"594",w:{b:8,p:.02}},"table-lamp":{col:"Lighting",sCat:"Home & Garden > Lighting > Lamps > Table Lamps",type:"lighting",gsc:"594",w:{b:4,p:.01}},"ceiling-light":{col:"Lighting",sCat:"Home & Garden > Lighting > Lighting Fixtures > Ceiling Light Fixtures",type:"lighting",gsc:"594",w:{b:5,p:.02}},"pendant-light":{col:"Lighting",sCat:"Home & Garden > Lighting > Lighting Fixtures > Chandeliers",type:"lighting",gsc:"594",w:{b:6,p:.02}},"wall-light":{col:"Lighting",sCat:"Home & Garden > Lighting > Lighting Fixtures > Wall Light Fixtures",type:"lighting",gsc:"594",w:{b:3,p:.01}},"buffet":{col:"Sideboards",sCat:"Furniture > Cabinets & Storage > Buffets",type:"sideboard",gsc:"6343",w:{b:40,p:.25}}};
 
 const CSV_H = ['Handle','Title','Body (HTML)','Vendor','Product Category','Type','Tags','Published','Option1 Name','Option1 Value','Option1 Linked To','Option2 Name','Option2 Value','Option2 Linked To','Option3 Name','Option3 Value','Option3 Linked To','Variant SKU','Variant Grams','Variant Inventory Tracker','Variant Inventory Policy','Variant Fulfillment Service','Variant Price','Variant Compare At Price','Variant Requires Shipping','Variant Taxable','Unit Price Total Measure','Unit Price Total Measure Unit','Unit Price Base Measure','Unit Price Base Measure Unit','Variant Barcode','Image Src','Image Position','Image Alt Text','Gift Card','SEO Title','SEO Description','Google Shopping / Google Product Category','Google Shopping / Gender','Google Shopping / Age Group','Google Shopping / MPN','Google Shopping / Condition','Google Shopping / Custom Product','Google Shopping / Custom Label 0','Google Shopping / Custom Label 1','Google Shopping / Custom Label 2','Google Shopping / Custom Label 3','Google Shopping / Custom Label 4','Rubik Configuration (product.metafields.craftshift.rubik_configuration)','Brand (product.metafields.custom.brand)','Care Instructions (product.metafields.custom.care_instructions)','Contact (product.metafields.custom.contact)','Cost CAD (product.metafields.custom.cost_cad)','Cost USD (product.metafields.custom.cost_usd)','Materials (product.metafields.custom.materials)','Shipping (product.metafields.custom.shipping)','Shipping cost USD (product.metafields.custom.shipping_cost_usd)','Google: Custom Product (product.metafields.mm-google-shopping.custom_product)','Allergy-friendly features (product.metafields.shopify.allergy-friendly-features)','Back type (product.metafields.shopify.back-type)','Backrest type (product.metafields.shopify.backrest-type)','Bed/Frame features (product.metafields.shopify.bed-frame-features)','Bedding size (product.metafields.shopify.bedding-size)','Bulb cap type (product.metafields.shopify.bulb-cap-type)','Bulb size (product.metafields.shopify.bulb-size)','Care instructions (product.metafields.shopify.care-instructions)','Chair features (product.metafields.shopify.chair-features)','Color (product.metafields.shopify.color-pattern)','Compatible mattress size (product.metafields.shopify.compatible-mattress-size)','Door material (product.metafields.shopify.door-material)','Door type (product.metafields.shopify.door-type)','Firmness (product.metafields.shopify.firmness)','Furniture/Fixture features (product.metafields.shopify.furniture-fixture-features)','Furniture/Fixture material (product.metafields.shopify.furniture-fixture-material)','Kitchen/Dining furniture items included (product.metafields.shopify.kitchen-dining-furniture-items-included)','Light temperature (product.metafields.shopify.light-temperature)','Material (product.metafields.shopify.material)','Mattress features (product.metafields.shopify.mattress-features)','Mounting type (product.metafields.shopify.mounting-type)','Pile type (product.metafields.shopify.pile-type)','Seat type (product.metafields.shopify.seat-type)','Style (product.metafields.shopify.style)','Suitable space (product.metafields.shopify.suitable-space)','Upholstery material (product.metafields.shopify.upholstery-material)','Complementary products (product.metafields.shopify--discovery--product_recommendation.complementary_products)','Related products (product.metafields.shopify--discovery--product_recommendation.related_products)','Related products settings (product.metafields.shopify--discovery--product_recommendation.related_products_display)','Search product boosts (product.metafields.shopify--discovery--product_search_boost.queries)','Variant Image','Variant Weight Unit','Variant Tax Code','Cost per item','Status'];
 
@@ -28,8 +28,20 @@ const aj=v=>Array.isArray(v)?v.join('; '):(v||'');
 
 // Track used product names to avoid repeats
 const usedNames = new Set();
-const NAME_POOL = 'Thessaloniki,Ravenna,Lucerne,Ghent,Tallinn,Dubrovnik,Córdoba,Salzburg,Bruges,Stavanger,Maribor,Trieste,Lecce,Otranto,Cadiz,Sintra,Coimbra,Rovinj,Split,Kotor,Plovdiv,Tbilisi,Yerevan,Tartu,Visby,Bergen,Tromsø,Aarhus,Malmö,Turku,Gdańsk,Wrocław,Kraków,Cesky Krumlov,Olomouc,Bratislava,Ljubljana,Piran,Colmar,Annecy,Dijon,Nantes,Bordeaux,Biarritz,Avignon,Arles,Montpellier,Girona,Ronda,Granada,Seville,Bilbao,Porto,Braga,Funchal,Valletta,Catania,Palermo,Siracusa,Matera,Perugia,Siena,Lucca,Verona,Padova,Bolzano,Trento,Como,Bergamo,Parma,Modena,Ferrara,Mantova,Cremona,Vicenza,Treviso,Udine,Baku,Batumi,Samarkand,Isfahan,Fez,Marrakech,Chefchaouen,Essaouira,Zanzibar,Lamu,Stellenbosch,Swakopmund,Luang Prabang,Hội An,Kandy,Galle,Jaipur,Udaipur,Pondicherry,Mysore,Kyoto,Kanazawa,Takayama,Kamakura,Naoshima,Otaru,Queenstown,Wanaka,Hobart,Byron,Cartagena,Oaxaca,Mérida,Valparaíso,Antigua,Bariloche,Cusco,Medellín,Charleston,Savannah,Asheville,Sedona,Taos,Carmel,Mendocino,Traverse';
+const NAME_POOL_ARR = 'Thessaloniki,Ravenna,Lucerne,Ghent,Tallinn,Dubrovnik,Córdoba,Salzburg,Bruges,Stavanger,Maribor,Trieste,Lecce,Otranto,Cadiz,Sintra,Coimbra,Rovinj,Split,Kotor,Plovdiv,Tbilisi,Yerevan,Tartu,Visby,Bergen,Tromsø,Aarhus,Malmö,Turku,Gdańsk,Wrocław,Kraków,Cesky Krumlov,Olomouc,Bratislava,Ljubljana,Piran,Colmar,Annecy,Dijon,Nantes,Bordeaux,Biarritz,Avignon,Arles,Montpellier,Girona,Ronda,Granada,Seville,Bilbao,Porto,Braga,Funchal,Valletta,Catania,Palermo,Siracusa,Matera,Perugia,Siena,Lucca,Verona,Padova,Bolzano,Trento,Como,Bergamo,Parma,Modena,Ferrara,Mantova,Cremona,Vicenza,Treviso,Udine,Baku,Batumi,Samarkand,Isfahan,Fez,Marrakech,Chefchaouen,Essaouira,Zanzibar,Lamu,Stellenbosch,Swakopmund,Luang Prabang,Hội An,Kandy,Galle,Jaipur,Udaipur,Pondicherry,Mysore,Kyoto,Kanazawa,Takayama,Kamakura,Naoshima,Otaru,Queenstown,Wanaka,Hobart,Byron,Cartagena,Oaxaca,Mérida,Valparaíso,Antigua,Bariloche,Cusco,Medellín,Charleston,Savannah,Asheville,Sedona,Taos,Carmel,Mendocino,Traverse'.split(',');
 function getAvoidList(){ return Array.from(usedNames).slice(-20).join(', '); }
+// Pick a random unused city name from the pool
+function pickRandomCity(){
+  const available = NAME_POOL_ARR.filter(n => !usedNames.has(n));
+  if(!available.length) return NAME_POOL_ARR[Math.floor(Math.random()*NAME_POOL_ARR.length)];
+  return available[Math.floor(Math.random()*available.length)];
+}
+// Get a shuffled subset of cities for the prompt (avoids Claude always seeing the same order)
+function getShuffledPool(count){
+  const available = NAME_POOL_ARR.filter(n => !usedNames.has(n));
+  const shuffled = available.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count || 30).join(', ');
+}
 
 async function callClaude(system,userContent){
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system,messages:[{role:'user',content:userContent}]})});
@@ -155,16 +167,83 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
       console.log('Products:', products.length, 'with images:', mapped);
       return res.json({products, fileName: fname, imageCount: Object.values(rowImages).flat().length, mappedCount: mapped});
     } else {
-      // PDF
+      // PDF — extract embedded images from raw buffer, then send PDF + images to Claude
       const fileB64 = req.file.buffer.toString('base64');
-      const parseR = await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
-        [{type:'document',source:{type:'base64',media_type:'application/pdf',data:fileB64}},{type:'text',text:'Parse this catalog. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[]}\ncategoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
-      );
+      const buf = req.file.buffer;
+
+      // Extract JPEG and PNG images from PDF stream
+      const pdfImages = [];
+      // Find JPEG images (FF D8 start, FF D9 end)
+      for(let i = 0; i < buf.length - 2; i++){
+        if(buf[i] === 0xFF && buf[i+1] === 0xD8 && buf[i+2] === 0xFF){
+          // Find JPEG end marker
+          for(let j = i + 3; j < buf.length - 1; j++){
+            if(buf[j] === 0xFF && buf[j+1] === 0xD9){
+              const imgBuf = buf.slice(i, j + 2);
+              // Only keep images > 5KB (skip thumbnails/icons)
+              if(imgBuf.length > 5000){
+                pdfImages.push({b64: imgBuf.toString('base64'), mime: 'image/jpeg'});
+              }
+              i = j + 1;
+              break;
+            }
+          }
+        }
+      }
+      // Find PNG images (89 50 4E 47 start, IEND end)
+      const pngSig = Buffer.from([0x89,0x50,0x4E,0x47]);
+      const pngEnd = Buffer.from('IEND');
+      for(let i = 0; i < buf.length - 8; i++){
+        if(buf[i]===0x89 && buf[i+1]===0x50 && buf[i+2]===0x4E && buf[i+3]===0x47){
+          const endIdx = buf.indexOf(pngEnd, i + 8);
+          if(endIdx > i){
+            const imgBuf = buf.slice(i, endIdx + 12); // IEND + 4 byte CRC
+            if(imgBuf.length > 5000){
+              pdfImages.push({b64: imgBuf.toString('base64'), mime: 'image/png'});
+            }
+            i = endIdx + 12;
+          }
+        }
+      }
+      console.log('PDF images extracted:', pdfImages.length);
+
+      // Build Claude request: PDF document + extracted images for matching
+      const content = [];
+      content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:fileB64}});
+      // Also send extracted images so Claude can match them to products
+      if(pdfImages.length > 0){
+        pdfImages.forEach((img, i) => {
+          content.push({type:'image',source:{type:'base64',media_type:img.mime,data:img.b64}});
+        });
+        content.push({type:'text',text:'Above is a supplier catalog PDF followed by '+pdfImages.length+' product images extracted from it (in order of appearance).\n\nExtract EVERY product. Match each image to its product using imageIndices (0-based index into the images above).\nFor each product:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[],"imageIndices":[0]}\ncategoryKey MUST match list. costUSD=number. Return ONLY JSON array. No markdown.'});
+      } else {
+        content.push({type:'text',text:'Parse this catalog PDF. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[]}\ncategoryKey MUST match list. costUSD=number. Return ONLY JSON array. No markdown.'});
+      }
+
+      const parseR = await callClaude('You parse supplier furniture catalogs. You can see images and match them to products. Return ONLY a valid JSON array.', content);
       let products;
       const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
       const arrM = cleaned.match(/\[[\s\S]*\]/);
       products = JSON.parse(arrM ? arrM[0] : cleaned);
-      return res.json({products, fileName: fname, imageCount: 0});
+
+      // Attach images based on Claude's imageIndices
+      if(pdfImages.length > 0){
+        products.forEach(p => {
+          const indices = p.imageIndices || [];
+          if(indices.length > 0 && pdfImages[indices[0]]){
+            p.imageB64 = pdfImages[indices[0]].b64;
+            p.imageMime = pdfImages[indices[0]].mime;
+            if(indices.length > 1){
+              p.extraImages = indices.slice(1).filter(i=>pdfImages[i]).map(i=>({b64:pdfImages[i].b64, mime:pdfImages[i].mime}));
+            }
+          }
+          delete p.imageIndices;
+        });
+      }
+
+      const mapped = products.filter(p => p.imageB64).length;
+      console.log('PDF products:', products.length, 'with images:', mapped);
+      return res.json({products, fileName: fname, imageCount: pdfImages.length, mappedCount: mapped});
     }
   }catch(e){console.error('Parse:',e);res.status(500).json({error:e.message})}
 });
@@ -179,7 +258,9 @@ app.post('/api/generate-copy', async(req,res)=>{
     const ci=CATS[ck];const dimsF=fmtDims(p.dimensions);
     const content=[];
     if(images?.length)images.forEach(img=>content.push({type:'image',source:{type:'base64',media_type:'image/png',data:img}}));
-    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: Pick ONE from this pool that has NOT been used: '+NAME_POOL+'\n- NEVER use: '+getAvoidList()+'\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features. NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
+    const assignedCity = pickRandomCity();
+    usedNames.add(assignedCity);
+    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: You MUST use exactly "'+assignedCity+'" as the city name. This has been pre-selected for this product.\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia, Lirael, Vespera, Fiora, Amarisse\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance, Lumière, Encore, Atelier\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features. NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
     const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.',content);
     const cp=parseJSON(cpR);
     const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
@@ -205,7 +286,9 @@ app.post('/api/extract', async(req,res)=>{
     const ex=parseJSON(exR);
     const ck=cKeys.includes(ex.categoryKey)?ex.categoryKey:'sofa';
     const ci=CATS[ck];const dimsF=fmtDims(ex.dimensions);
-    const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.','Create copy for: '+(ex.name||'Furniture')+', Material: '+(ex.material||'Premium')+', Category: '+ci.col+', Dims: '+(dimsF||ex.dimensions||'N/A')+'\nReturn JSON: {"creativeNames":["CITY from: '+NAME_POOL.split(',').slice(0,40).join(',')+' — NEVER use: '+getAvoidList()+'","feminine name","concept"],"htmlDescription":"<p> + <ul><li> specs, NO tables, use THE_PRODUCT_NAME","seoTitle":"THE_PRODUCT_NAME | Altera Home Design","seoDescription":"under 155 chars","tags":["5 tags"]}\nONLY JSON.');
+    const assignedCity2 = pickRandomCity();
+    usedNames.add(assignedCity2);
+    const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.','Create copy for: '+(ex.name||'Furniture')+', Material: '+(ex.material||'Premium')+', Category: '+ci.col+', Dims: '+(dimsF||ex.dimensions||'N/A')+'\nReturn JSON: {"creativeNames":["CITY_NAME","feminine name","concept"],"htmlDescription":"<p> + <ul><li> specs, NO tables, use THE_PRODUCT_NAME","seoTitle":"THE_PRODUCT_NAME | Altera Home Design","seoDescription":"under 155 chars","tags":["5 tags"]}\n\nNAMING: CITY_NAME must be exactly "'+assignedCity2+'". This has been pre-selected.\nONLY JSON.');
     const cp=parseJSON(cpR);
     const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
     const title='The '+cp.creativeNames[0]+' '+typeCap;
@@ -302,6 +385,18 @@ const CAT_SCENES = {
     {t:'Luxury Bedroom',p:'In a luxury bedroom suite with coordinating furniture, plush carpet, soft ambient lighting'},
     {t:'Close-up Detail',p:'Close-up of door handle, hinge, and surface finish quality'},
     {t:'Close-up Interior',p:'Close-up of interior organization — shelf edge, drawer detail, rail'}
+  ],
+  'office-chair': [
+    {t:'Studio Front',s:1,p:'Front view on pure white background, centered, no props'},
+    {t:'Studio Angle',s:1,p:'Three-quarter angle on pure white background, showing swivel base and armrest detail'},
+    {t:'Modern Home Office',p:'At a sleek desk in a modern home office with bookshelves, a laptop on the desk, task lighting, large window with natural light, indoor plant'},
+    {t:'Scandinavian Home Office',p:'At a light wood desk in a bright Scandinavian home office with white walls, open shelving with books, pendant light, natural daylight from window'},
+    {t:'Executive Office',p:'Behind a large executive desk in a sophisticated office with dark wood paneling, leather desk pad, desk lamp, framed artwork, premium finishes'},
+    {t:'Minimalist Home Office',p:'At a minimalist floating desk in a clean home office with white walls, single monitor, small succulent plant, natural light'},
+    {t:'Contemporary Home Office',p:'In a contemporary home office with a standing desk option, dual monitors, modern art on walls, city view through windows'},
+    {t:'Cozy Study',p:'At a wooden desk in a cozy study with built-in bookshelves, warm reading lamp, coffee cup on desk, warm afternoon light through curtains'},
+    {t:'Close-up Detail',p:'Close-up of seat cushion, armrest mechanism, and upholstery texture detail'},
+    {t:'Close-up Base',p:'Close-up of chair base, caster wheels, height adjustment mechanism, and finish quality'}
   ]
 };
 // Default scenes for categories not explicitly defined
@@ -320,11 +415,13 @@ const DEFAULT_SCENES = [
 // Map category aliases
 const sceneFor = ck => {
   if(CAT_SCENES[ck]) return CAT_SCENES[ck];
-  if(ck.includes('chair')||ck==='bar-stool') return CAT_SCENES['dining-table']; // chairs go in dining rooms
+  if(ck==='visitor-chair') return CAT_SCENES['office-chair']; // visitor chairs go in offices
+  if(ck==='dining-chair'||ck==='bar-stool') return CAT_SCENES['dining-table']; // dining chairs in dining rooms
+  if(ck==='living-room-chair') return CAT_SCENES['sofa']; // living room chairs in living rooms
   if(ck.includes('lamp')||ck.includes('light')) return DEFAULT_SCENES;
-  if(ck==='coffee-table'||ck==='side-table') return CAT_SCENES['sofa']; // coffee tables go with sofas
+  if(ck==='coffee-table'||ck==='side-table') return CAT_SCENES['sofa'];
   if(ck==='shoe-cabinet') return CAT_SCENES['sideboard'];
-  if(ck==='office-desk') return DEFAULT_SCENES;
+  if(ck==='office-desk') return CAT_SCENES['office-chair']; // office desks in home offices
   if(ck==='mattress') return CAT_SCENES['bed'];
   if(ck==='buffet') return CAT_SCENES['sideboard'];
   if(ck.includes('set')) return CAT_SCENES['dining-table'];

@@ -235,8 +235,7 @@ function updV(k,v){if(D.products[D.activeTab].variant)D.products[D.activeTab].va
 
 function setName(idx,name){
   const p=D.products[idx];
-  const ci=CATS[p.catKey]||CATS['tv-cabinet'];
-  const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const typeCap=(p.type||'furniture').split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
   const oldTitle=p.title;
   const newTitle='The '+name+' '+typeCap;
   p.title=newTitle;
