@@ -74,8 +74,8 @@ function getShuffledPool(count){
   return shuffled.slice(0, count || 30).join(', ');
 }
 
-async function callClaude(system,userContent){
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system,messages:[{role:'user',content:userContent}]})});
+async function callClaude(system,userContent,maxTokens){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens||4096,system,messages:[{role:'user',content:userContent}]})});
   if(!r.ok)throw new Error('Claude API '+r.status+': '+(await r.text()).substring(0,300));
   const d=await r.json();return d.content?.map(b=>b.text||'').join('')||'';
 }
@@ -175,7 +175,7 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
         content.push({type:'text',text:'Parse this spreadsheet:\n'+textLines+'\n\nExtract EVERY product. If two rows are the SAME product in different sizes, combine as ONE product with hasVariants:true.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[],"hasVariants":false,"variants":[]}\ncategoryKey MUST match list. Return ONLY JSON array.'});
       }
 
-      const parseR = await callClaude('You parse supplier furniture catalogs. You can see images and match them to products. Return ONLY a valid JSON array.', content);
+      const parseR = await callClaude('You parse supplier furniture catalogs. You can see images and match them to products. Return ONLY a valid JSON array.', content, 16000);
       let products;
       const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
       const arrM = cleaned.match(/\[[\s\S]*\]/);
@@ -275,7 +275,8 @@ IMPORTANT RULES:
 
       const parseR = await callClaude(
         'You are an expert at parsing supplier quotations and price lists for furniture. You can see images and match them to the correct products by analyzing what each image shows. Return ONLY a valid JSON array.',
-        content
+        content,
+        16000
       );
       let products;
       const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
@@ -323,10 +324,10 @@ app.post('/api/generate-copy', async(req,res)=>{
     const assignedCity = pickRandomCity();
     usedNames.add(assignedCity);
     const hasImages = images?.length > 0;
-    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\n'+(hasImages?'IMPORTANT: Look carefully at the product image(s) above. Your description MUST accurately describe what you SEE in the image — the shape, design, color, upholstery, armrests, base type, back style, and any visible features. Do NOT invent features not visible in the image.\n':'')+'\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"THE_PRODUCT_NAME | Altera Home Design (under 60 chars)","seoDescription":"under 155 chars with THE_PRODUCT_NAME","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: You MUST use exactly "'+assignedCity+'" as the city name. This has been pre-selected for this product.\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia, Lirael, Vespera, Fiora, Amarisse\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance, Lumière, Encore, Atelier\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Describe what you see in the image — the actual design, shape, color, upholstery style. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features (based on what you observe). NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
+    const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+    content.push({type:'text',text:'Create marketing copy for Altera Home Design.\n'+(hasImages?'IMPORTANT: Look carefully at the product image(s) above. Your description MUST accurately describe what you SEE in the image — the shape, design, color, upholstery, armrests, base type, back style, and any visible features. Do NOT invent features not visible in the image.\n':'')+'\nProduct: '+(p.supplierName||'Furniture')+'\nMaterial: '+(p.material||'Premium')+'\nModel: '+(p.modelNumber||'N/A')+'\nCategory: '+ci.col+'\nType: '+ci.type+'\nDimensions: '+(dimsF||p.dimensions||'N/A')+'\n\nReturn JSON:\n{"creativeNames":["CITY_NAME","FEMININE_NAME","ABSTRACT_CONCEPT"],"htmlDescription":"SEO HTML (see rules)","seoTitle":"SEO page title (see SEO RULES)","seoDescription":"meta description (see SEO RULES)","tags":["5 lowercase seo tags"]}\n\nNAMING RULES:\n- CITY_NAME: You MUST use exactly "'+assignedCity+'" as the city name. This has been pre-selected for this product.\n- FEMININE_NAME: elegant name like Cressida, Ondine, Seraphina, Isolde, Elowen, Calista, Thessaly, Aurelia, Lirael, Vespera, Fiora, Amarisse\n- ABSTRACT_CONCEPT: evocative word like Solace, Meridian, Cadence, Reverie, Provenance, Lumière, Encore, Atelier\n\nSEO RULES — CRITICAL FOR SEARCH RANKING:\n- seoTitle: MUST be under 60 characters total. Format: "THE_PRODUCT_NAME '+typeCap+' | Altera Home Design". Front-load the product name and type keyword. The category type word (e.g. Sofa, Bed, Dining Table) MUST appear in the title for search ranking.\n- seoDescription: MUST be 120-155 characters. Write a compelling description that includes: THE_PRODUCT_NAME, the category type word ('+ci.type+'), ONE key material/feature keyword, and end with a call-to-action like "Shop now at Altera Home Design" or "Free delivery in Canada". Must read naturally and entice clicks from search results.\n- tags: Include 5 lowercase SEO tags relevant for furniture search. Include the category type (e.g. "'+ci.type+'"), material, style, and "altera home design". Example: ["modern sofa","velvet sofa","living room furniture","contemporary sofa","altera home design"]\n\nHTML RULES: Write 2-3 marketing sentences in <p> with THE_PRODUCT_NAME. Describe what you see in the image — the actual design, shape, color, upholstery style. Then <ul><li> for specs: Material, Dimensions cm(inches), Model, Features (based on what you observe). NO <table> tags. Only <p><ul><li><strong>.\nONLY JSON.'});
     const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.',content);
     const cp=parseJSON(cpR);
-    const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
     const title='The '+cp.creativeNames[0]+' '+typeCap;
     usedNames.add(cp.creativeNames[0]);
     const rep=s=>(s||'').replace(/THE_PRODUCT_NAME/g,title);
@@ -351,7 +352,8 @@ app.post('/api/extract', async(req,res)=>{
     const ci=CATS[ck];const dimsF=fmtDims(ex.dimensions);
     const assignedCity2 = pickRandomCity();
     usedNames.add(assignedCity2);
-    const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.','Create copy for: '+(ex.name||'Furniture')+', Material: '+(ex.material||'Premium')+', Category: '+ci.col+', Dims: '+(dimsF||ex.dimensions||'N/A')+'\nReturn JSON: {"creativeNames":["CITY_NAME","feminine name","concept"],"htmlDescription":"<p> + <ul><li> specs, NO tables, use THE_PRODUCT_NAME","seoTitle":"THE_PRODUCT_NAME | Altera Home Design","seoDescription":"under 155 chars","tags":["5 tags"]}\n\nNAMING: CITY_NAME must be exactly "'+assignedCity2+'". This has been pre-selected.\nONLY JSON.');
+    const typeCap2=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+    const cpR=await callClaude('Luxury furniture copywriter. Return ONLY valid JSON.','Create copy for: '+(ex.name||'Furniture')+', Material: '+(ex.material||'Premium')+', Category: '+ci.col+', Type: '+ci.type+', Dims: '+(dimsF||ex.dimensions||'N/A')+'\nReturn JSON: {"creativeNames":["CITY_NAME","feminine name","concept"],"htmlDescription":"<p> + <ul><li> specs, NO tables, use THE_PRODUCT_NAME","seoTitle":"SEO page title (see SEO RULES)","seoDescription":"meta description (see SEO RULES)","tags":["5 lowercase seo tags"]}\n\nNAMING: CITY_NAME must be exactly "'+assignedCity2+'". This has been pre-selected.\n\nSEO RULES — CRITICAL FOR SEARCH RANKING:\n- seoTitle: MUST be under 60 characters total. Format: "THE_PRODUCT_NAME '+typeCap2+' | Altera Home Design". Front-load the product name and type keyword. The category type word (e.g. Sofa, Bed, Dining Table) MUST appear in the title.\n- seoDescription: MUST be 120-155 characters. Include THE_PRODUCT_NAME, the category type ('+ci.type+'), one key material/feature, and a call-to-action like "Shop now at Altera Home Design" or "Free delivery in Canada". Must be compelling.\n- tags: 5 lowercase SEO tags. Include "'+ci.type+'", material, style, and "altera home design".\nONLY JSON.');
     const cp=parseJSON(cpR);
     const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
     const title='The '+cp.creativeNames[0]+' '+typeCap;
