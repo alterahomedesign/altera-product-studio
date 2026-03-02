@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const JSZip = require('jszip');
 const path = require('path');
+const { PDFDocument, PDFName } = require('pdf-lib');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50*1024*1024 } });
 app.use(express.json({ limit: '100mb' }));
@@ -23,6 +24,31 @@ const estWeight=(k,cm)=>{const w=CATS[k]?.w||{b:25,p:.15};return w.b+(cm||0)*w.p
 const genSKU=(m,s)=>{const x=v=>(v||'').replace(/[^a-z0-9]/gi,'').toUpperCase().slice(0,5);return x(m||'PROD')+'-'+x(String(s||'OS'))};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const esc=v=>{const s=String(v??'');return/[,"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+
+// ═══ PDF IMAGE EXTRACTION ═══
+async function extractPdfImages(buffer) {
+  const images = [];
+  try {
+    const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+    const ctx = pdfDoc.context;
+    for (const [ref, obj] of ctx.enumerateIndirectObjects()) {
+      if (obj == null || obj.dict == null) continue;
+      const sub = obj.dict.get(PDFName.of('Subtype'));
+      if (sub == null || sub.toString() !== '/Image') continue;
+      const filter = obj.dict.get(PDFName.of('Filter'));
+      const filterStr = filter ? filter.toString() : '';
+      const w = parseInt(obj.dict.get(PDFName.of('Width'))?.toString()) || 0;
+      const h = parseInt(obj.dict.get(PDFName.of('Height'))?.toString()) || 0;
+      // Skip tiny images (logos, icons, bullets)
+      if (w < 80 || h < 80) continue;
+      if (filterStr.includes('DCTDecode') && obj.contents && obj.contents.length > 500) {
+        images.push({ b64: Buffer.from(obj.contents).toString('base64'), mime: 'image/jpeg', w, h });
+      }
+    }
+    console.log('PDF images extracted:', images.length, images.map(i => i.w + 'x' + i.h).join(', '));
+  } catch (e) { console.error('PDF image extraction error:', e.message); }
+  return images;
+}
 const emptyRow=()=>Object.fromEntries(CSV_H.map(h=>[h,'']));
 const aj=v=>Array.isArray(v)?v.join('; '):(v||'');
 
@@ -155,16 +181,106 @@ app.post('/api/parse-catalog', upload.single('file'), async(req,res)=>{
       console.log('Products:', products.length, 'with images:', mapped);
       return res.json({products, fileName: fname, imageCount: Object.values(rowImages).flat().length, mappedCount: mapped});
     } else {
-      // PDF
+      // PDF — extract images + quotation-aware parsing
       const fileB64 = req.file.buffer.toString('base64');
-      const parseR = await callClaude('You parse supplier furniture catalogs. Return ONLY a valid JSON array.',
-        [{type:'document',source:{type:'base64',media_type:'application/pdf',data:fileB64}},{type:'text',text:'Parse this catalog. Extract EVERY product.\nFor each:\n{"supplierName":"...","modelNumber":"...","material":"...","dimensions":"LxWxH cm","costUSD":0,"weightKg":0,"categoryKey":"one of: '+cKeys.join(', ')+'","colors":[],"style":[],"furnitureMaterial":[]}\ncategoryKey MUST match list. costUSD=number. Return JSON array. No markdown.'}]
+      const pdfImages = await extractPdfImages(req.file.buffer);
+
+      const content = [];
+
+      // Add extracted images first so Claude can see and match them
+      if (pdfImages.length > 0) {
+        pdfImages.forEach((img) => {
+          content.push({type:'image', source:{type:'base64', media_type:img.mime, data:img.b64}});
+        });
+      }
+
+      // Add the PDF document so Claude can read the text/tables
+      content.push({type:'document', source:{type:'base64', media_type:'application/pdf', data:fileB64}});
+
+      // Build a detailed, quotation-aware prompt
+      const hasImages = pdfImages.length > 0;
+      const imageInstructions = hasImages
+        ? `\n\nIMAGE MATCHING — CRITICAL:
+Above this PDF document you can see ${pdfImages.length} product images that were extracted from the PDF, numbered 0 through ${pdfImages.length - 1} in the order shown.
+For EACH product, set "imageIndices" to an array of indices (0-based) of the images that show THAT specific product.
+RULES for matching images to products:
+- Look at what each image ACTUALLY shows (the furniture type, shape, color, material) and match it to the correct product row.
+- A product image shows the ACTUAL FURNITURE PIECE described in that row — match by furniture type, material, and appearance.
+- Each image should belong to exactly ONE product. Do NOT assign the same image to multiple products.
+- If a product has no matching image, set "imageIndices": [].
+- If a product has multiple images (e.g. different angles), include all matching indices.
+- The FIRST image (index 0) is NOT necessarily for the first product — match by what the image SHOWS, not by position.`
+        : '\n\nNo images were extracted from this PDF. Set "imageIndices": [] for all products.';
+
+      content.push({type:'text', text: `This is a SUPPLIER QUOTATION or PRICE LIST document (not a general catalog).
+
+DOCUMENT STRUCTURE:
+Supplier quotations typically contain:
+- A header with supplier name, customer name, date, reference number
+- A TABLE or LIST of products, where each ROW is a separate product/line item
+- Each row usually has: item number, model/reference, description, image, quantity, unit price, total price
+- Sometimes products have size variants on separate rows (e.g. "4-drawer" and "5-drawer" of the same model)
+
+YOUR TASK:
+1. Read the document carefully, line by line, row by row
+2. Identify EACH individual product line item
+3. Extract structured data for every product
+4. If two rows are clearly the SAME product in different sizes (e.g. same model number with "4-drawer" vs "5-drawer"), combine them as ONE product with hasVariants:true
+${imageInstructions}
+
+For EACH product, return:
+{
+  "supplierName": "the product name/description from the quotation",
+  "modelNumber": "model or reference number",
+  "material": "material if listed (wood, metal, fabric, etc.)",
+  "dimensions": "LxWxH in cm like 200x40x45 — convert from any unit if needed",
+  "costUSD": 0,
+  "weightKg": 0,
+  "categoryKey": "one of: ${cKeys.join(', ')}",
+  "colors": ["color names if visible or described"],
+  "style": ["modern", "contemporary", etc.],
+  "furnitureMaterial": ["wood", "metal", etc.],
+  "imageIndices": [0],
+  "hasVariants": false,
+  "variants": []
+}
+
+If hasVariants is true, include:
+"variants": [{"sizeName": "Four-drawer", "dimensions": "...", "costUSD": 0, "weightKg": 0}, ...]
+
+IMPORTANT RULES:
+- categoryKey MUST be one from the list above, pick the closest match
+- costUSD must be a number (the unit price, NOT total price for quantity)
+- If prices are in a different currency, still put the number in costUSD (we convert later)
+- Extract ALL products — do not skip any line items
+- Do NOT invent products that aren't in the document
+- Return ONLY a valid JSON array. No markdown, no explanation.`});
+
+      const parseR = await callClaude(
+        'You are an expert at parsing supplier quotations and price lists for furniture. You can see images and match them to the correct products by analyzing what each image shows. Return ONLY a valid JSON array.',
+        content
       );
       let products;
       const cleaned = parseR.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
       const arrM = cleaned.match(/\[[\s\S]*\]/);
       products = JSON.parse(arrM ? arrM[0] : cleaned);
-      return res.json({products, fileName: fname, imageCount: 0});
+
+      // Attach images based on Claude's imageIndices (same pattern as Excel)
+      products.forEach(p => {
+        const indices = p.imageIndices || [];
+        if (indices.length > 0 && pdfImages[indices[0]]) {
+          p.imageB64 = pdfImages[indices[0]].b64;
+          p.imageMime = pdfImages[indices[0]].mime;
+          if (indices.length > 1) {
+            p.extraImages = indices.slice(1).filter(i => pdfImages[i]).map(i => ({b64: pdfImages[i].b64, mime: pdfImages[i].mime}));
+          }
+        }
+        delete p.imageIndices;
+      });
+
+      const mapped = products.filter(p => p.imageB64).length;
+      console.log('PDF products:', products.length, 'with images:', mapped);
+      return res.json({products, fileName: fname, imageCount: pdfImages.length, mappedCount: mapped});
     }
   }catch(e){console.error('Parse:',e);res.status(500).json({error:e.message})}
 });
