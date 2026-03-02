@@ -226,6 +226,7 @@ function renderProductForm(p){
       ${p.photoProgress?'<div style="margin-top:6px;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div style="width:'+Math.round(p.photoProgress.current/p.photoProgress.total*100)+'%;height:100%;background:linear-gradient(90deg,#b8965a,#8f6d3a);transition:width .5s"></div></div>':''}
     </div>
     ${(p.aiImages||[]).length?'<div class="cd"><label class="lb">AI Photoshoot — '+p.aiImages.length+' images</label><div class="igrid">'+p.aiImages.map(img=>'<div class="icard sel" style="aspect-ratio:1"><img src="data:'+((img.b64||'').startsWith('/9')?'image/jpeg':'image/png')+';base64,'+img.b64+'" style="width:100%;height:100%;object-fit:cover"><div class="iov"><span style="font-size:9px;font-weight:600;color:#fff">'+esc(img.scene)+'</span></div></div>').join('')+'</div></div>':''}
+    ${((p.originalImages||[]).length||(p.aiImages||[]).length)?'<button class="bs" style="margin-top:8px;width:100%;padding:10px" onclick="dlProductZip('+D.activeTab+')">↓ Download Images ZIP</button>':''}
   </div></div>`;
 }
 
@@ -235,8 +236,7 @@ function updV(k,v){if(D.products[D.activeTab].variant)D.products[D.activeTab].va
 
 function setName(idx,name){
   const p=D.products[idx];
-  const ci=CATS[p.catKey]||CATS['tv-cabinet'];
-  const typeCap=ci.type.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const typeCap=(p.type||'furniture').split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
   const oldTitle=p.title;
   const newTitle='The '+name+' '+typeCap;
   p.title=newTitle;
@@ -304,32 +304,84 @@ async function genAllCopy(){
 }
 
 // ═══ EXPORTS ═══
-function getExportProducts(){
+// CSV only needs product data — no images (avoids payload size issues)
+function getExportProductsForCSV(){
   return D.products.filter(p=>p.generated).map(p=>({
     title:p.title,htmlDescription:p.htmlDescription,brand:p.brand,type:p.type,
     shopifyCategory:p.shopifyCategory,googleShoppingCat:p.googleShoppingCat,
     seoTitle:p.seoTitle,seoDescription:p.seoDescription,tags:p.tags,
     hasVariants:p.hasVariants,variant:p.variant,variants:p.variants,
-    metafields:p.metafields,aiImages:(p.aiImages||[]).map(x=>({scene:x.scene,b64:x.b64})),
-    originalImages:p.originalImages||[]
+    metafields:p.metafields
   }));
 }
 
 async function dlBulkCSV(){
-  const prods=getExportProducts();
+  const prods=getExportProductsForCSV();
   if(!prods.length){toast('Generate copy first');return}
   toast('Building CSV for '+prods.length+' products...');
-  const r=await fetch('/api/export-bulk-csv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
-  if(!r.ok){showErr('CSV failed');return}
-  const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_import.csv';a.click();URL.revokeObjectURL(a.href);toast('CSV exported!');
+  try{
+    const r=await fetch('/api/export-bulk-csv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));showErr('CSV failed: '+(e.error||r.status));return}
+    const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_import.csv';a.click();URL.revokeObjectURL(a.href);toast('CSV exported!');
+  }catch(e){showErr('CSV failed: '+e.message)}
 }
 
+// Load JSZip from CDN for client-side zip building
+async function loadJSZip(){
+  if(window.JSZip)return;
+  await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});
+}
+
+// Per-product ZIP download — download images for one product
+async function dlProductZip(idx){
+  const p=D.products[idx];if(!p){toast('No product');return}
+  const handle=(p.title||'product').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+  toast('Building ZIP for '+handle+'...');
+  await loadJSZip();
+  const zip=new JSZip();
+  (p.originalImages||[]).forEach((b64,i)=>{
+    const ext=b64.startsWith('/9j/')?'jpg':'png';
+    zip.file('original_'+(i+1)+'.'+ext, b64, {base64:true});
+  });
+  (p.aiImages||[]).forEach((img)=>{
+    const fn=img.scene.replace(/[^a-z0-9]/gi,'_').toLowerCase();
+    const ext=(img.b64||'').startsWith('/9j/')?'jpg':'png';
+    zip.file(fn+'.'+ext, img.b64, {base64:true});
+  });
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=handle+'_images.zip';a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Downloaded: '+handle+'_images.zip');
+}
+
+// Bulk ZIP — built entirely client-side to avoid server payload limits
 async function dlBulkZip(){
-  const prods=getExportProducts();
-  if(!prods.length){toast('Generate copy first');return}
-  toast('Building ZIP for '+prods.length+' products...');
-  const r=await fetch('/api/export-bulk-zip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:prods})});
-  if(!r.ok){showErr('ZIP failed');return}
-  const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='altera_bulk_package.zip';a.click();URL.revokeObjectURL(a.href);toast('ZIP exported!');
+  const generated=D.products.filter(p=>p.generated);
+  if(!generated.length){toast('Generate copy first');return}
+  toast('Building ZIP for '+generated.length+' products...');
+  await loadJSZip();
+  const zip=new JSZip();
+  generated.forEach(p=>{
+    const handle=(p.title||'product').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+    (p.originalImages||[]).forEach((b64,i)=>{
+      const ext=b64.startsWith('/9j/')?'jpg':'png';
+      zip.file(handle+'/original_'+(i+1)+'.'+ext, b64, {base64:true});
+    });
+    (p.aiImages||[]).forEach((img)=>{
+      const fn=img.scene.replace(/[^a-z0-9]/gi,'_').toLowerCase();
+      const ext=(img.b64||'').startsWith('/9j/')?'jpg':'png';
+      zip.file(handle+'/'+fn+'.'+ext, img.b64, {base64:true});
+    });
+  });
+  // Fetch CSV from server (lightweight, no images) and include in zip
+  try{
+    const r=await fetch('/api/export-bulk-csv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:getExportProductsForCSV()})});
+    if(r.ok){const csvText=await r.text();zip.file('shopify_import.csv',csvText)}
+  }catch{}
+  zip.file('README.txt','HOW TO IMPORT:\n1. Go to Shopify Admin > Products > Import\n2. Upload shopify_import.csv\n3. Do NOT check "Overwrite existing products"\n4. After import, open each product and upload its images from the matching folder\n\nImage folders are named by product handle (URL slug).');
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='altera_bulk_package.zip';a.click();
+  URL.revokeObjectURL(a.href);
+  toast('ZIP exported with '+generated.length+' products!');
 }
 </script></body></html>
